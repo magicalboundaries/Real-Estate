@@ -1,8 +1,8 @@
 import os
 import sqlite3
-from typing import Optional
+from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import requests
 
 app = FastAPI(title="Native Real Estate CRM & WhatsApp Webhook Gateway")
@@ -31,14 +31,16 @@ def init_db():
 
 init_db()
 
+# Flexible payload model to accept both Vyora test pings and real call events
 class AICallWebhookPayload(BaseModel):
-    phone: str
-    contact_name: Optional[str] = "Doctor"
-    outcome: str
-    interest_confirmation: Optional[str] = "No"
-    ai_summary: Optional[str] = ""
-    recording_url: Optional[str] = ""
-    called_at: Optional[str] = ""
+    phone: Optional[str] = Field(default="910000000000")
+    contact_name: Optional[str] = Field(default="Doctor")
+    outcome: Optional[str] = Field(default="Test event received")
+    interest_confirmation: Optional[str] = Field(default="No")
+    ai_summary: Optional[str] = Field(default="")
+    recording_url: Optional[str] = Field(default="")
+    called_at: Optional[str] = Field(default="")
+    event: Optional[Any] = None  # Captures Vyora test events seamlessly
 
 def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str):
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
@@ -75,8 +77,12 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str):
 @app.post("/webhook/ai-caller")
 def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: BackgroundTasks):
     try:
-        outcome_lower = payload.outcome.lower()
-        interest_lower = payload.interest_confirmation.lower()
+        # Handle Vyora test button pings gracefully
+        if payload.event == "test" or not payload.phone or payload.phone == "910000000000":
+            return {"status": "success", "message": "Vyora webhook test ping received successfully!"}
+
+        outcome_lower = (payload.outcome or "").lower()
+        interest_lower = (payload.interest_confirmation or "").lower()
         
         if "visit scheduled" in outcome_lower or interest_lower == "yes" or "follow up requested" in outcome_lower:
             tier = "Tier 1: Hot Prospect"
