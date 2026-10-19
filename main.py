@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 import requests
 
-app = FastAPI(title="Native Real Estate CRM & WhatsApp Webhook Gateway")
+app = FastAPI(title="Native Real Estate CRM & Dynamic WhatsApp Gateway")
 
 DB_FILE = "native_crm_leads.db"
 
@@ -31,18 +31,53 @@ def init_db():
 
 init_db()
 
-# Flexible payload model to accept both Vyora test pings and real call events
+# Flexible payload model capturing campaign and call details from Vyora
 class AICallWebhookPayload(BaseModel):
     phone: Optional[str] = Field(default="910000000000")
-    contact_name: Optional[str] = Field(default="Doctor")
-    outcome: Optional[str] = Field(default="Test event received")
+    contact_name: Optional[str] = Field(default="Valued Client")
+    outcome: Optional[str] = Field(default="Call Completed")
     interest_confirmation: Optional[str] = Field(default="No")
     ai_summary: Optional[str] = Field(default="")
     recording_url: Optional[str] = Field(default="")
     called_at: Optional[str] = Field(default="")
-    event: Optional[Any] = None  # Captures Vyora test events seamlessly
+    campaign: Optional[str] = Field(default="Luxury Real Estate Project")
+    event: Optional[Any] = None
 
-def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str):
+def generate_dynamic_message(contact_name: str, ai_summary: str, campaign: str) -> str:
+    summary_lower = (ai_summary or "").lower()
+    name_lower = (contact_name or "").lower()
+    campaign_lower = (campaign or "").lower()
+    
+    # 1. Detect Audience Type (Doctor, Investor, or General Homebuyer)
+    if "dr." in name_lower or "doctor" in name_lower or "medical" in summary_lower:
+        audience_tone = "As a medical professional, we understand your requirement for high-ROI, hassle-free real estate assets."
+    elif "investor" in summary_lower or "roi" in summary_lower or "rental" in summary_lower:
+        audience_tone = "Designed for high capital appreciation and strong rental yields, this asset fits your investment portfolio perfectly."
+    else:
+        audience_tone = "Thank you for exploring our premium residential offerings."
+
+    # 2. Detect Project Name dynamically from summary or campaign tag
+    if "twin horizon" in summary_lower or "twin horizon" in campaign_lower:
+        project_name = "HCBS Twin Horizon (Sector 102, Dwarka Expressway)"
+        offer_details = "featuring low-density luxury 3 & 4 BHK residences with world-class amenities."
+    elif "lansdowne" in summary_lower or "lansdowne" in campaign_lower:
+        project_name = "Villas Lansdowne"
+        offer_details = "featuring exclusive luxury hill-view villas."
+    else:
+        # Fallback to whatever campaign tag Vyora passes
+        project_name = campaign or "our premium luxury real estate project"
+        offer_details = "featuring modern architecture and strategic connectivity."
+
+    # 3. Assemble the dynamic WhatsApp message body
+    message = (
+        f"Hi {contact_name}, it was great speaking with you regarding {project_name}. "
+        f"{audience_tone} {offer_details} "
+        f"Here is the official brochure and cost sheet as requested. "
+        f"When would you prefer to schedule your private site visit?"
+    )
+    return message
+
+def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary: str, campaign: str):
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
@@ -56,10 +91,8 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str):
         "Content-Type": "application/json"
     }
     
-    if "Tier 1" in tier:
-        message_body = f"Hi {contact_name}, thanks for speaking with our team regarding HCBS Twin Horizon, Sector 102 (Dwarka Expressway). Here is the official project brochure and cost sheet as requested. When would you prefer to schedule your site visit?"
-    else:
-        message_body = f"Hi {contact_name}, great connecting earlier regarding Gurugram luxury real estate. Sharing a quick overview of our low-density 3 & 4 BHK project in Sector 102. Let me know if you have any questions!"
+    # Generate message dynamically based on lead profile and project
+    message_body = generate_dynamic_message(contact_name, ai_summary, campaign)
 
     payload = {
         "messaging_product": "whatsapp",
@@ -77,7 +110,6 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str):
 @app.post("/webhook/ai-caller")
 def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: BackgroundTasks):
     try:
-        # Handle Vyora test button pings gracefully
         if payload.event == "test" or not payload.phone or payload.phone == "910000000000":
             return {"status": "success", "message": "Vyora webhook test ping received successfully!"}
 
@@ -101,9 +133,9 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
         conn.close()
 
         if "Tier 1" in tier or "Tier 2" in tier:
-            background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier)
+            background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier, payload.ai_summary, payload.campaign)
 
-        return {"status": "success", "message": "Lead stored in Native CRM & WhatsApp queued successfully", "assigned_tier": tier}
+        return {"status": "success", "message": "Lead stored & dynamic WhatsApp queued successfully", "assigned_tier": tier}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
