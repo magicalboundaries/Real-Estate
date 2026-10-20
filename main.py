@@ -132,13 +132,26 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
     
     message_body = generate_dynamic_message(contact_name, ai_summary, campaign)
 
-    payload = {
+   payload = {
         "messaging_product": "whatsapp",
         "to": phone,
-        "type": "text",
-        "text": {"body": message_body}
-    }
-    
+        "type": "template",
+        "template": {
+            "name": "3p_direct_integration_test_template",
+            "language": {
+                "code": "en_US"
+            },
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": contact_name},
+                        {"type": "text", "text": matched_project_name}
+                    ]
+                }
+            ]
+        }
+    }    
     try:
         response = requests.post(url, json=payload, headers=headers)
         print("Meta WhatsApp API Response:", response.json())
