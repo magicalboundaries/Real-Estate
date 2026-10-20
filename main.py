@@ -43,6 +43,7 @@ def init_db():
 init_db()
 
 PROJECT_BROCHURES = {
+    "residential": "https://real-estate-dy59.onrender.com/brochures/residential-portfolio.pdf",
     "commercial": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf",
     "industrial": "https://real-estate-dy59.onrender.com/brochures/industrial-portfolio.pdf",
     "m3m": "https://real-estate-dy59.onrender.com/brochures/m3m-commercial.pdf",
@@ -58,7 +59,6 @@ def get_brochure_link(text_context: str) -> str:
     return PROJECT_BROCHURES["default"]
 
 def clean_phone(raw_phone: str) -> str:
-    """Ensures phone number has country code 91 and no symbols."""
     digits = "".join([c for c in str(raw_phone) if c.isdigit()])
     if len(digits) == 10:
         return "91" + digits
@@ -137,7 +137,6 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "Content-Type": "application/json"
     }
     
-    # Payload matching active template name and 'en' language code
     payload = {
         "messaging_product": "whatsapp",
         "to": formatted_phone,
@@ -149,7 +148,7 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
                 {
                     "type": "body",
                     "parameters": [
-                        {"type": "text", "text": contact_name},
+                        {"type": "text", "text": contact_name if contact_name.strip() else "Valued Client"},
                         {"type": "text", "text": brochure_url}
                     ]
                 }
@@ -175,7 +174,10 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
         body = {}
 
     phone = clean_phone(body.get("phone", "910000000000"))
-    contact_name = body.get("contact_name", "Valued Client")
+    contact_name = body.get("contact_name", "Valued Client").strip()
+    if not contact_name or contact_name == "":
+        contact_name = "Valued Client"
+        
     property_type = body.get("property_type", "Commercial / Industrial")
     raw_summary = body.get("ai_summary", "")
     
@@ -223,7 +225,9 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
         body.get("customer_name") or 
         (body.get("customer") or {}).get("name") or 
         "Valued Client"
-    )
+    ).strip()
+    if not contact_name:
+        contact_name = "Valued Client"
 
     outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Call Completed"
     raw_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or "Vyora Voice Interaction"
