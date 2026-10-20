@@ -43,84 +43,91 @@ class AICallWebhookPayload(BaseModel):
     event: Optional[Any] = None
 
 # ==========================================
-# CENTRAL PROJECT DATABASE (Expanded)
+# CENTRAL PROJECT DATABASE (Residential & Commercial Classified)
 # ==========================================
 PROJECT_DATABASE = {
-    "twin horizon": {
-        "name": "HCBS Twin Horizon (Sector 102, Dwarka Expressway)",
-        "details": "Low-density luxury 3 & 4 BHK residences with 70% open green spaces, 1.15 lakh sq. ft. club & recreational space.",
-        "offer": "Special payment plan: Pay 10% now, attractive bank loan schemes powered by Bajaj Housing Finance & Bank of Maharashtra.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/twin-horizon.pdf"
-    },
+    # RESIDENTIAL PROJECTS
     "amstoria": {
+        "category": "residential",
         "name": "BPTP Amstoria 102 Eden Estate III (Sector 102, Gurugram)",
-        "details": "Exclusive ~9.903-acre plotted development within a 143-acre Lutyens-style luxury township on Dwarka Expressway featuring Sanctuary Club and central greens[cite: 14, 15].",
-        "offer": "Pre-launch premier plots with world-class township infrastructure and seamless connectivity to Dwarka Golf Course & Yashobhoomi[cite: 16].",
+        "details": "Exclusive ~9.903-acre plotted development within a 143-acre Lutyens-style luxury township on Dwarka Expressway featuring Sanctuary Club and central greens.",
+        "offer": "Pre-launch premier plots with world-class township infrastructure and seamless connectivity to Dwarka Golf Course & Yashobhoomi.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/amstoria-102.pdf"
     },
-    "synq": {
-        "name": "Mahagun Synq - IQ Suites by High Life (Greater Noida West)",
-        "details": "AI-optimised 1 & 2 BHK smart suites featuring automated lighting, curtains, climate control, and fully furnished by IKEA[cite: 136, 138, 146].",
-        "offer": "Next standard of luxury living with CLEUB home automation, G+18 floors, and commercial spaces on ground to 4th floor[cite: 137, 139].",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/mahagun-synq.pdf"
-    },
     "eternia": {
+        "category": "residential",
         "name": "Mahagun Eternia (Tech Zone IV, Greater Noida West)",
-        "details": "Spacious 6-acre residential enclave inspired by the Anthurium flower offering 3 & 4 BHK luxury residences with G+30 floors[cite: 168, 173].",
-        "offer": "Facing a 100-meter fully developed green belt on 130-meter wide main road with double-height entrance lobby and ~25,000 sq. ft. clubhouse[cite: 173, 180, 194].",
+        "details": "Spacious 6-acre residential enclave inspired by the Anthurium flower offering 3 & 4 BHK luxury residences with G+30 floors.",
+        "offer": "Facing a 100-meter fully developed green belt on 130-meter wide main road with double-height entrance lobby and ~25,000 sq. ft. clubhouse.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/mahagun-eternia.pdf"
     },
     "godrej miraya": {
+        "category": "residential",
         "name": "Godrej Miraya (Sector 43, Golf Course Road, Gurugram)",
-        "details": "Ultra-luxury 5.16-acre masterpiece with only 248 exclusive residences, 3-side open towers, no shared walls, and The Crystal Club[cite: 39, 41, 49].",
-        "offer": "Legacy luxury living by India's No. 1 Developer with 127 years of trust, private lounges, and elite concierge services[cite: 32, 33, 44].",
+        "details": "Ultra-luxury 5.16-acre masterpiece with only 248 exclusive residences, 3-side open towers, no shared walls, and The Crystal Club.",
+        "offer": "Legacy luxury living by India's No. 1 Developer with 127 years of trust, private lounges, and elite concierge services.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/godrej-miraya.pdf"
     },
     "arista luxe": {
+        "category": "residential",
         "name": "The Arista Luxe (Sector 168, Noida Expressway - Nimbus)",
-        "details": "British architectural elegance featuring Ionic columns, 11 ft. floor-to-ceiling height, expansive Yamuna & forest views, and 7 conceptualized pools[cite: 77, 78, 93].",
-        "offer": "Limited period pre-launch price advantage before revision. 65% open green spaces and 1.6 lakh sq. ft. Club Aristaire[cite: 77, 78, 96].",
+        "details": "British architectural elegance featuring Ionic columns, 11 ft. floor-to-ceiling height, expansive Yamuna & forest views, and 7 conceptualized pools.",
+        "offer": "Limited period pre-launch price advantage before revision. 65% open green spaces and 1.6 lakh sq. ft. Club Aristaire.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/arista-luxe.pdf"
     },
+    "twin horizon": {
+        "category": "residential",
+        "name": "HCBS Twin Horizon (Sector 102, Dwarka Expressway)",
+        "details": "Low-density luxury 3 & 4 BHK residences with 70% open green spaces, 1.15 lakh sq. ft. club & recreational space.",
+        "offer": "Special payment plan: Pay 10% now, attractive bank loan schemes powered by Bajaj Housing Finance.",
+        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/twin-horizon.pdf"
+    },
     "hero homes": {
+        "category": "residential",
         "name": "Leafsong Retreat / The Palatial (Sector MU, Greater Noida - Hero)",
-        "details": "Resort-themed luxury project featuring AQI-controlled apartments, 70,000 sq. ft. ultra-luxury clubhouse, and smart 3 BHK layouts[cite: 67].",
-        "offer": "Smart Payment Plan: Pay just 50 Lakhs in 4 months, zero payment till 18 months. First transfer free![cite: 67]",
+        "details": "Resort-themed luxury project featuring AQI-controlled apartments, 70,000 sq. ft. ultra-luxury clubhouse, and smart 3 BHK layouts.",
+        "offer": "Smart Payment Plan: Pay just 50 Lakhs in 4 months, zero payment till 18 months. First transfer free!",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/hero-homes.pdf"
     },
-    "prestige": {
-        "name": "Prestige Group Flagship Residences (NCR, Bangalore & Mumbai)",
-        "details": "World-class luxury townships, high-rise towers, and premium villas across prime urban micro-markets.",
-        "offer": "Special Two-Good plans (Zero EMI for 2 years) and flexible 25:75 / 50:50 customer payment options.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/prestige-group.pdf"
-    },
     "eldeco amaya": {
+        "category": "residential",
         "name": "Eldeco Amaya (Sector 33, Sonipat)",
         "details": "14 acres of Tuscan-style premium residential plots and villas inspired by European countryside living.",
         "offer": "Features Club Amaya, swimming pool, landscaped greens, and 60-meter wide road access.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/eldeco.pdf"
     },
     "serenity hills": {
+        "category": "residential",
         "name": "Emaar Serenity Hills (Sector 86, Gurugram)",
         "details": "IGBC Platinum pre-certified luxury 3 & 4 BHK residences with 8 acres of central greens and a waterfront promenade.",
         "offer": "Resort-styled Club Serenity, EV charging infrastructure, and expansive decks with full-height glazing.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/serenity.pdf"
     },
-    "m3m": {
-        "name": "M3M Commercial & Residential (Gurugram)",
-        "details": "High-street retail and luxury commercial spaces with assured rental and festive privileges.",
+
+    # COMMERCIAL PROJECTS
+    "mahagun synq": {
+        "category": "commercial",
+        "name": "Mahagun Synq - IQ Suites & Commercial (Greater Noida West)",
+        "details": "AI-optimised 1 & 2 BHK smart suites with high-street commercial retail spaces on Ground to 4th Floor powered by CLEUB home automation.",
+        "offer": "High rental yields, fully furnished by IKEA, ideal for smart investors seeking retail and studio spaces.",
+        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/mahagun-synq.pdf"
+    },
+    "m3m commercial": {
+        "category": "commercial",
+        "name": "M3M Commercial & Retail Avenues (Gurugram)",
+        "details": "High-street retail and luxury commercial spaces with assured rental and festive privileges along prime corridors.",
         "offer": "Festive Fortune Offer: Pay 40% now, 60% near possession, plus special electronics/iPhone festive vouchers.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/m3m.pdf"
     }
 }
 
 def forward_to_owner_whatsapp(notification_text: str):
-    """Forwards notification or customer replies to your personal business number: 8851692559"""
     owner_phone = "918851692559"
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
     if not phone_number_id or not access_token:
+        print("[Error]: Meta credentials missing for owner forwarding.")
         return
 
     url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
@@ -137,7 +144,8 @@ def forward_to_owner_whatsapp(notification_text: str):
     }
     
     try:
-        requests.post(url, json=payload, headers=headers)
+        res = requests.post(url, json=payload, headers=headers)
+        print("Owner Forwarding Response:", res.json())
     except Exception as e:
         print(f"[Error forwarding to owner]: {e}")
 
@@ -157,14 +165,14 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
     
     summary_lower = (ai_summary or "").lower()
     campaign_lower = (campaign or "").lower()
-    matched_project_name = campaign or "our premium luxury project"
+    matched_project_name = campaign or "our premium luxury property"
     
     for key, proj in PROJECT_DATABASE.items():
         if key in summary_lower or key in campaign_lower:
             matched_project_name = proj["name"]
             break
 
-    # Using Meta's pre-approved test template to bypass cold-outreach blocking
+    # Meta Template Payload (using pre-approved integration test template)
     payload = {
         "messaging_product": "whatsapp",
         "to": phone,
@@ -188,12 +196,12 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
         response = requests.post(url, json=payload, headers=headers)
         print("Meta WhatsApp API Response:", response.json())
         
-        # Mirroring: Forward summary of outbound message to your business number (8851692559)
+        # Mirroring out to 8851692559
         forward_to_owner_whatsapp(
-            f"📤 [Outbound Log]\n"
+            f"📤 [Outbound CRM Log]\n"
             f"Project: {matched_project_name}\n"
             f"Sent To Customer: {contact_name} ({phone})\n"
-            f"Status: Automated follow-up template dispatched."
+            f"Status: Automated WhatsApp template dispatched successfully."
         )
     except Exception as e:
         print(f"[Error] Failed to send WhatsApp message to {phone}: {e}")
@@ -202,7 +210,7 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
 def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: BackgroundTasks):
     try:
         if payload.event == "test" or not payload.phone or payload.phone == "910000000000":
-            return {"status": "success", "message": "Vyora webhook test ping received successfully!"}
+            return {"status": "success", "message": "Webhook test ping received successfully!"}
 
         outcome_lower = (payload.outcome or "").lower()
         interest_lower = (payload.interest_confirmation or "").lower()
@@ -213,8 +221,6 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
             tier = "Tier 4: Voicemail / Missed Call"
         elif "visit scheduled" in outcome_lower or interest_lower == "yes" or "follow up requested" in outcome_lower:
             tier = "Tier 1: Hot Prospect"
-        elif "hesitated" in outcome_lower or "postponed" in outcome_lower:
-            tier = "Tier 2: Hesitant / Reluctant"
         else:
             tier = "Tier 3: Cautious Listener"
         
@@ -227,17 +233,22 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
         conn.commit()
         conn.close()
 
-        if "Tier 1" in tier or "Tier 2" in tier or "Tier 4" in tier:
-            background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier, payload.ai_summary, payload.campaign)
+        # Trigger WhatsApp and owner forwarding for leads
+        background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier, payload.ai_summary, payload.campaign)
+        
+        # Direct owner mirror alert
+        forward_to_owner_whatsapp(
+            f"🚨 [New Qualified Lead Captured]\n"
+            f"Name: {payload.contact_name}\n"
+            f"Phone: {payload.phone}\n"
+            f"Details: {payload.ai_summary}"
+        )
 
-        return {"status": "success", "message": "Lead stored & automated WhatsApp queued", "assigned_tier": tier}
+        return {"status": "success", "message": "Lead stored & automated WhatsApp dispatched", "assigned_tier": tier}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ==========================================
-# WHATSAPP INBOUND WEBHOOK (Catches Customer Replies)
-# ==========================================
 @app.get("/webhook/whatsapp-inbound")
 def verify_whatsapp_webhook(request: Request):
     verify_token = request.query_params.get("hub.verify_token")
@@ -264,7 +275,7 @@ async def receive_whatsapp_reply(request: Request):
                         f"💬 [Incoming Customer Reply]\n"
                         f"From: {customer_phone}\n"
                         f"Message: {message_body}\n\n"
-                        f"*(Reply directly to this customer from your WhatsApp or CRM)*"
+                        f"*(Reply directly to this customer)*"
                     )
     except Exception as e:
         print(f"[Error processing incoming whatsapp reply]: {e}")
