@@ -137,12 +137,13 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "Content-Type": "application/json"
     }
     
+    # Matches your newly created template name and clean plain text parameters
     payload = {
         "messaging_product": "whatsapp",
         "to": formatted_phone,
         "type": "template",
         "template": {
-            "name": "3p_direct_integration_test_template",
+            "name": "3p_direct_integration_v2",
             "language": { "code": "en" },
             "components": [
                 {
@@ -175,10 +176,10 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
 
     phone = clean_phone(body.get("phone", "910000000000"))
     contact_name = body.get("contact_name", "Valued Client").strip()
-    if not contact_name or contact_name == "":
+    if not contact_name:
         contact_name = "Valued Client"
         
-    property_type = body.get("property_type", "Commercial / Industrial")
+    property_type = body.get("property_type", "Residential / Commercial / Industrial")
     raw_summary = body.get("ai_summary", "")
     
     clean_sum = clean_transcript(raw_summary)
