@@ -137,13 +137,13 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "Content-Type": "application/json"
     }
     
-    # Matches your newly created template name and clean plain text parameters
+    # Updated to use brochure_dispatch_v3 with dynamic variables {{1}} and {{2}}
     payload = {
         "messaging_product": "whatsapp",
         "to": formatted_phone,
         "type": "template",
         "template": {
-            "name": "3p_direct_integration_v2",
+            "name": "brochure_dispatch_v3",
             "language": { "code": "en" },
             "components": [
                 {
