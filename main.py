@@ -42,7 +42,6 @@ def init_db():
 
 init_db()
 
-# PROJECT BROCHURE DATABASE
 PROJECT_BROCHURES = {
     "commercial": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf",
     "industrial": "https://real-estate-dy59.onrender.com/brochures/industrial-portfolio.pdf",
@@ -58,12 +57,19 @@ def get_brochure_link(text_context: str) -> str:
             return link
     return PROJECT_BROCHURES["default"]
 
+def clean_phone(raw_phone: str) -> str:
+    """Ensures phone number has country code 91 and no symbols."""
+    digits = "".join([c for c in str(raw_phone) if c.isdigit()])
+    if len(digits) == 10:
+        return "91" + digits
+    return digits
+
 def clean_transcript(raw_summary: Any) -> str:
     if not raw_summary:
         return "Call Completed Successfully - Brochure Dispatched"
     summary_str = str(raw_summary)
     if "[" in summary_str and "]" in summary_str and "timestamp" in summary_str:
-        return "Voice Call Completed (Transcript Logged) - Visit Scheduled & Brochure Triggered"
+        return "Voice Call Completed - Visit Scheduled & Brochure Triggered"
     return summary_str
 
 def forward_to_owner_whatsapp(notification_text: str):
@@ -72,7 +78,6 @@ def forward_to_owner_whatsapp(notification_text: str):
     access_token = os.getenv("META_ACCESS_TOKEN")
     
     if not phone_number_id or not access_token:
-        print("[Error]: Meta credentials missing for owner WhatsApp forwarding.")
         return
 
     url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
@@ -80,19 +85,16 @@ def forward_to_owner_whatsapp(notification_text: str):
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
-    
     payload = {
         "messaging_product": "whatsapp",
         "to": owner_phone,
         "type": "text",
         "text": {"body": notification_text}
     }
-    
     try:
-        res = requests.post(url, json=payload, headers=headers)
-        print("Owner WhatsApp Forwarding Response:", res.json())
+        requests.post(url, json=payload, headers=headers)
     except Exception as e:
-        print(f"[Error forwarding to owner whatsapp]: {e}")
+        print(f"[Error forwarding to owner]: {e}")
 
 def send_email_notification(subject: str, content: str):
     recipient = "info@magicalboundries.com"
@@ -102,7 +104,6 @@ def send_email_notification(subject: str, content: str):
     smtp_password = os.getenv("SMTP_PASSWORD")
 
     if not smtp_server or not smtp_user or not smtp_password:
-        print(f"[Email Mock] SMTP settings not configured. Target: {recipient} | Subject: {subject}")
         return
 
     try:
@@ -116,22 +117,18 @@ def send_email_notification(subject: str, content: str):
             server.starttls()
             server.login(smtp_user, smtp_password)
             server.send_message(msg)
-        print(f"[Email Success] Lead sent to {recipient}")
     except Exception as e:
-        print(f"[Error sending email to {recipient}]: {e}")
+        print(f"[Error sending email]: {e}")
 
 def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str):
-    """
-    Sends WhatsApp message to customer using Meta's official TEMPLATE API format 
-    (required by Meta for initiating outbound messages outside the 24-hour window).
-    """
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
+    formatted_phone = clean_phone(phone)
     brochure_url = get_brochure_link(project_context)
 
     if not phone_number_id or not access_token:
-        print(f"[WhatsApp Mock] Meta credentials not set. Would have sent brochure to {phone} with link {brochure_url}")
+        print(f"[WhatsApp Mock] Credentials missing. Target: {formatted_phone} | Link: {brochure_url}")
         return
 
     url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
@@ -140,14 +137,14 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "Content-Type": "application/json"
     }
     
-    # Meta Approved Template Payload
+    # Payload matching active template name and 'en' language code
     payload = {
         "messaging_product": "whatsapp",
-        "to": phone,
+        "to": formatted_phone,
         "type": "template",
         "template": {
             "name": "3p_direct_integration_test_template",
-            "language": { "code": "en_US" },
+            "language": { "code": "en" },
             "components": [
                 {
                     "type": "body",
@@ -164,13 +161,12 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         response = requests.post(url, json=payload, headers=headers)
         print("Meta WhatsApp Template Dispatch Response:", response.json())
     except Exception as e:
-        print(f"[Error] Failed to send WhatsApp template to {phone}: {e}")
+        print(f"[Error] Failed to send WhatsApp template: {e}")
 
 @app.get("/")
 def read_root():
     return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active"}
 
-# Dedicated Endpoint for Website Chatbot
 @app.post("/webhook/website-chat")
 async def receive_website_chat_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
@@ -178,14 +174,13 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     except Exception:
         body = {}
 
-    phone = body.get("phone", "910000000000")
+    phone = clean_phone(body.get("phone", "910000000000"))
     contact_name = body.get("contact_name", "Valued Client")
     property_type = body.get("property_type", "Commercial / Industrial")
     raw_summary = body.get("ai_summary", "")
     
     clean_sum = clean_transcript(raw_summary)
-    source_label = "🌐 Website Chatbot Lead (www.magicalboundaries.com)"
-    full_summary = f"[{source_label}] {clean_sum}"
+    full_summary = f"[🌐 Website Chatbot Lead (www.magicalboundaries.com)] {clean_sum}"
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -196,24 +191,12 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     conn.commit()
     conn.close()
 
-    # Trigger customer WhatsApp template dispatch
     background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, property_type + " " + str(raw_summary))
-    
-    # Notify owner & email
-    forward_to_owner_whatsapp(
-        f"🚨 [New Website Chatbot Lead]\n"
-        f"Name: {contact_name}\n"
-        f"Phone: {phone}\n"
-        f"Details: {clean_sum}"
-    )
-    send_email_notification(
-        subject=f"New Website Lead: {contact_name} ({phone})",
-        content=f"A new lead was captured via www.magicalboundaries.com chatbot.\n\nName: {contact_name}\nPhone: {phone}\nSummary: {clean_sum}"
-    )
+    forward_to_owner_whatsapp(f"🚨 [New Website Lead]\nName: {contact_name}\nPhone: {phone}\nDetails: {clean_sum}")
+    send_email_notification(f"New Website Lead: {contact_name} ({phone})", f"Name: {contact_name}\nPhone: {phone}\nSummary: {clean_sum}")
 
     return {"status": "success", "message": "Website lead stored and brochure WhatsApp dispatched"}
 
-# Dedicated Endpoint for Vyora Voice Calls
 @app.post("/webhook/ai-caller")
 async def receive_ai_call_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
@@ -221,7 +204,7 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     except Exception:
         body = {}
 
-    phone = (
+    raw_phone = (
         body.get("phone") or 
         body.get("customer_phone") or 
         body.get("phone_number") or 
@@ -232,6 +215,7 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
         (body.get("lead") or {}).get("phone") or 
         "910000000000"
     )
+    phone = clean_phone(raw_phone)
 
     contact_name = (
         body.get("contact_name") or 
@@ -261,25 +245,12 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     conn.commit()
     conn.close()
 
-    # Trigger customer WhatsApp template dispatch
     background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, str(raw_summary))
-    
-    # Notify owner & email
-    forward_to_owner_whatsapp(
-        f"📞 [{source_label}]\n"
-        f"Name: {contact_name}\n"
-        f"Phone: {phone}\n"
-        f"Outcome: {outcome}\n"
-        f"Summary: {clean_sum}"
-    )
-    send_email_notification(
-        subject=f"New Vyora Lead: {contact_name} ({phone})",
-        content=f"Call Interaction on Vyora Number 7971413799.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {clean_sum}"
-    )
+    forward_to_owner_whatsapp(f"📞 [{source_label}]\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {clean_sum}")
+    send_email_notification(f"New Vyora Lead: {contact_name} ({phone})", f"Source: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {clean_sum}")
 
     return {"status": "success", "message": "Vyora call logged and brochure WhatsApp dispatched"}
 
-# Professional HTML View for /leads (Day-wise, Date-wise, Numbered with clean spacing)
 @app.get("/leads", response_class=HTMLResponse)
 def get_all_leads(x_api_key: Optional[str] = None):
     conn = sqlite3.connect(DB_FILE)
