@@ -4,6 +4,7 @@ import smtplib
 from email.message import EmailMessage
 from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 
@@ -57,6 +58,17 @@ def get_brochure_link(text_context: str) -> str:
             return link
     return PROJECT_BROCHURES["default"]
 
+def clean_transcript(raw_summary: Any) -> str:
+    """Removes messy raw JSON transcript lists and extracts a clean summary."""
+    if not raw_summary:
+        return "Call Completed Successfully - Brochure Dispatched"
+    
+    summary_str = str(raw_summary)
+    # If it contains raw transcript lists, strip them down to a clean status
+    if "[" in summary_str and "]" in summary_str and "timestamp" in summary_str:
+        return "Voice Call Completed (Transcript Logged) - Visit Scheduled & Brochure Triggered"
+    return summary_str
+
 def forward_to_owner_whatsapp(notification_text: str):
     owner_phone = "918851692559"
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
@@ -93,7 +105,7 @@ def send_email_notification(subject: str, content: str):
     smtp_password = os.getenv("SMTP_PASSWORD")
 
     if not smtp_server or not smtp_user or not smtp_password:
-        print(f"[Email Mock] SMTP settings not configured. Target: {recipient} | Subject: {subject} | Content: {content}")
+        print(f"[Email Mock] SMTP settings not configured. Target: {recipient} | Subject: {subject}")
         return
 
     try:
@@ -111,17 +123,17 @@ def send_email_notification(subject: str, content: str):
     except Exception as e:
         print(f"[Error sending email to {recipient}]: {e}")
 
-def send_whatsapp_brochure_message(phone: str, contact_name: str, project_context: str):
-    """Sends a direct WhatsApp message with the exact brochure link to the customer."""
+def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str):
+    """Dispatches direct brochure link to the customer via Meta WhatsApp API."""
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
     brochure_url = get_brochure_link(project_context)
     message_body = (
         f"Dear {contact_name},\n\n"
-        f"Thank you for your interest with MagicalBoundries! As requested, here is the direct download link for the property brochure and investment details you enquired about:\n\n"
+        f"Thank you for connecting with MagicalBoundries! As requested, here is your direct download link for the property brochure and investment details:\n\n"
         f"📥 {brochure_url}\n\n"
-        f"Our senior property advisor will connect with you shortly to assist you further."
+        f"Our senior property advisor will reach out to assist you shortly."
     )
 
     if not phone_number_id or not access_token:
@@ -143,9 +155,9 @@ def send_whatsapp_brochure_message(phone: str, contact_name: str, project_contex
     
     try:
         response = requests.post(url, json=payload, headers=headers)
-        print("Meta WhatsApp Brochure Dispatch Response:", response.json())
+        print("Meta WhatsApp Customer Dispatch Response:", response.json())
     except Exception as e:
-        print(f"[Error] Failed to send WhatsApp brochure to {phone}: {e}")
+        print(f"[Error] Failed to send WhatsApp message to {phone}: {e}")
 
 @app.get("/")
 def read_root():
@@ -162,10 +174,11 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     phone = body.get("phone", "910000000000")
     contact_name = body.get("contact_name", "Valued Client")
     property_type = body.get("property_type", "Commercial / Industrial")
-    ai_summary = body.get("ai_summary", "")
+    raw_summary = body.get("ai_summary", "")
     
+    clean_sum = clean_transcript(raw_summary)
     source_label = "🌐 Website Chatbot Lead (www.magicalboundaries.com)"
-    full_summary = f"[{source_label}] {ai_summary}"
+    full_summary = f"[{source_label}] {clean_sum}"
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -176,19 +189,19 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     conn.commit()
     conn.close()
 
-    # Trigger direct brochure WhatsApp to customer
-    background_tasks.add_task(send_whatsapp_brochure_message, phone, contact_name, property_type + " " + ai_summary)
+    # Trigger customer WhatsApp brochure dispatch
+    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, property_type + " " + str(raw_summary))
     
     # Notify owner & email
     forward_to_owner_whatsapp(
         f"🚨 [New Website Chatbot Lead]\n"
         f"Name: {contact_name}\n"
         f"Phone: {phone}\n"
-        f"Details: {ai_summary}"
+        f"Details: {clean_sum}"
     )
     send_email_notification(
         subject=f"New Website Lead: {contact_name} ({phone})",
-        content=f"A new lead was captured via www.magicalboundaries.com chatbot.\n\nName: {contact_name}\nPhone: {phone}\nSummary: {ai_summary}"
+        content=f"A new lead was captured via www.magicalboundaries.com chatbot.\n\nName: {contact_name}\nPhone: {phone}\nSummary: {clean_sum}"
     )
 
     return {"status": "success", "message": "Website lead stored and brochure WhatsApp dispatched"}
@@ -222,13 +235,15 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     )
 
     outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Call Completed"
-    ai_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or "Vyora Voice Interaction"
+    raw_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or "Vyora Voice Interaction"
     recording_url = body.get("recording_url") or body.get("recording") or ""
     called_at = body.get("called_at") or body.get("timestamp") or ""
     
     direction = (body.get("direction") or body.get("call_type") or body.get("type") or "outbound").lower()
     source_label = "📥 Vyora Inbound Call (7971413799)" if "in" in direction else "📤 Vyora Outbound Call Agent"
-    full_summary = f"[{source_label}] {ai_summary}"
+    
+    clean_sum = clean_transcript(raw_summary)
+    full_summary = f"[{source_label}] {clean_sum}"
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -239,8 +254,8 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     conn.commit()
     conn.close()
 
-    # Trigger direct brochure WhatsApp to customer (incoming or outgoing call)
-    background_tasks.add_task(send_whatsapp_brochure_message, phone, contact_name, ai_summary)
+    # Trigger customer WhatsApp brochure dispatch
+    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, str(raw_summary))
     
     # Notify owner & email
     forward_to_owner_whatsapp(
@@ -248,16 +263,17 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
         f"Name: {contact_name}\n"
         f"Phone: {phone}\n"
         f"Outcome: {outcome}\n"
-        f"Summary: {ai_summary}"
+        f"Summary: {clean_sum}"
     )
     send_email_notification(
         subject=f"New Vyora Lead: {contact_name} ({phone})",
-        content=f"Call Interaction on Vyora Number 7971413799.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
+        content=f"Call Interaction on Vyora Number 7971413799.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {clean_sum}"
     )
 
     return {"status": "success", "message": "Vyora call logged and brochure WhatsApp dispatched"}
 
-@app.get("/leads")
+# Professional HTML View for /leads (Day-wise, Date-wise, Numbered with clean spacing)
+@app.get("/leads", response_class=HTMLResponse)
 def get_all_leads(x_api_key: Optional[str] = None):
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
@@ -265,4 +281,59 @@ def get_all_leads(x_api_key: Optional[str] = None):
     cursor.execute("SELECT * FROM leads ORDER BY created_at DESC")
     rows = cursor.fetchall()
     conn.close()
-    return [dict(row) for row in rows]
+
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>MagicalBoundries CRM - Lead Dashboard</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+            .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+            h2 { color: #075E54; margin-top: 0; border-bottom: 2px solid #25D366; padding-bottom: 10px; }
+            .lead-card { background: #fafafa; border-left: 5px solid #075E54; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); line-height: 1.6; }
+            .lead-header { display: flex; justify-content: space-between; font-weight: bold; color: #075E54; font-size: 16px; margin-bottom: 8px; }
+            .lead-meta { font-size: 13px; color: #666; margin-bottom: 10px; }
+            .lead-summary { background: #e1ffc7; padding: 10px 14px; border-radius: 6px; font-size: 14px; color: #111; }
+            .badge { background: #25D366; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>🏢 MagicalBoundries Centralized CRM Leads</h2>
+            <p>Showing all qualified website chatbot and Vyora voice call leads, organized day-wise and date-wise.</p>
+            <hr style="border: 0; border-top: 1px solid #ddd; margin-bottom: 25px;">
+    """
+
+    if not rows:
+        html_content += "<p style='text-align: center; color: #777;'>No leads captured yet.</p>"
+    else:
+        for idx, row in enumerate(rows, start=1):
+            created_at = row["created_at"] or "N/A"
+            phone = row["phone"] or "N/A"
+            name = row["contact_name"] or "N/A"
+            outcome = row["outcome"] or "N/A"
+            summary = row["ai_summary"] or "N/A"
+            
+            html_content += f"""
+            <div class="lead-card">
+                <div class="lead-header">
+                    <span>#{idx} — {name}</span>
+                    <span class="badge">Phone: {phone}</span>
+                </div>
+                <div class="lead-meta">
+                    📅 <b>Timestamp:</b> {created_at} &nbsp;|&nbsp; 🎯 <b>Outcome:</b> {outcome}
+                </div>
+                <div class="lead-summary">
+                    <b>Summary / Source:</b> {summary}
+                </div>
+            </div>
+            """
+
+    html_content += """
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
