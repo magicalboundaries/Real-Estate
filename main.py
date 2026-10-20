@@ -137,7 +137,6 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "Content-Type": "application/json"
     }
     
-    # Updated to use brochure_dispatch_v3 with dynamic variables {{1}} and {{2}}
     payload = {
         "messaging_product": "whatsapp",
         "to": formatted_phone,
@@ -254,7 +253,7 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     forward_to_owner_whatsapp(f"📞 [{source_label}]\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {clean_sum}")
     send_email_notification(f"New Vyora Lead: {contact_name} ({phone})", f"Source: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {clean_sum}")
 
-    return {"status": "success", "message": "Vyora call logged and brochure WhatsApp dispatched"}
+    return {"status": "success", "message": "Call logged and brochure WhatsApp dispatched"}
 
 @app.get("/leads", response_class=HTMLResponse)
 def get_all_leads(x_api_key: Optional[str] = None):
