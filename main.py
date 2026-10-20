@@ -59,12 +59,9 @@ def get_brochure_link(text_context: str) -> str:
     return PROJECT_BROCHURES["default"]
 
 def clean_transcript(raw_summary: Any) -> str:
-    """Removes messy raw JSON transcript lists and extracts a clean summary."""
     if not raw_summary:
         return "Call Completed Successfully - Brochure Dispatched"
-    
     summary_str = str(raw_summary)
-    # If it contains raw transcript lists, strip them down to a clean status
     if "[" in summary_str and "]" in summary_str and "timestamp" in summary_str:
         return "Voice Call Completed (Transcript Logged) - Visit Scheduled & Brochure Triggered"
     return summary_str
@@ -124,20 +121,17 @@ def send_email_notification(subject: str, content: str):
         print(f"[Error sending email to {recipient}]: {e}")
 
 def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str):
-    """Dispatches direct brochure link to the customer via Meta WhatsApp API."""
+    """
+    Sends WhatsApp message to customer using Meta's official TEMPLATE API format 
+    (required by Meta for initiating outbound messages outside the 24-hour window).
+    """
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
     brochure_url = get_brochure_link(project_context)
-    message_body = (
-        f"Dear {contact_name},\n\n"
-        f"Thank you for connecting with MagicalBoundries! As requested, here is your direct download link for the property brochure and investment details:\n\n"
-        f"📥 {brochure_url}\n\n"
-        f"Our senior property advisor will reach out to assist you shortly."
-    )
 
     if not phone_number_id or not access_token:
-        print(f"[WhatsApp Mock] Meta credentials not set. Would have sent brochure to {phone}: {message_body}")
+        print(f"[WhatsApp Mock] Meta credentials not set. Would have sent brochure to {phone} with link {brochure_url}")
         return
 
     url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
@@ -146,18 +140,31 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "Content-Type": "application/json"
     }
     
+    # Meta Approved Template Payload
     payload = {
         "messaging_product": "whatsapp",
         "to": phone,
-        "type": "text",
-        "text": {"body": message_body}
+        "type": "template",
+        "template": {
+            "name": "3p_direct_integration_test_template",
+            "language": { "code": "en_US" },
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": contact_name},
+                        {"type": "text", "text": brochure_url}
+                    ]
+                }
+            ]
+        }
     }
     
     try:
         response = requests.post(url, json=payload, headers=headers)
-        print("Meta WhatsApp Customer Dispatch Response:", response.json())
+        print("Meta WhatsApp Template Dispatch Response:", response.json())
     except Exception as e:
-        print(f"[Error] Failed to send WhatsApp message to {phone}: {e}")
+        print(f"[Error] Failed to send WhatsApp template to {phone}: {e}")
 
 @app.get("/")
 def read_root():
@@ -189,7 +196,7 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     conn.commit()
     conn.close()
 
-    # Trigger customer WhatsApp brochure dispatch
+    # Trigger customer WhatsApp template dispatch
     background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, property_type + " " + str(raw_summary))
     
     # Notify owner & email
@@ -254,7 +261,7 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     conn.commit()
     conn.close()
 
-    # Trigger customer WhatsApp brochure dispatch
+    # Trigger customer WhatsApp template dispatch
     background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, str(raw_summary))
     
     # Notify owner & email
@@ -289,21 +296,21 @@ def get_all_leads(x_api_key: Optional[str] = None):
         <meta charset="UTF-8">
         <title>MagicalBoundries CRM - Lead Dashboard</title>
         <style>
-            body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-            .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-            h2 { color: #075E54; margin-top: 0; border-bottom: 2px solid #25D366; padding-bottom: 10px; }
-            .lead-card { background: #fafafa; border-left: 5px solid #075E54; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); line-height: 1.6; }
-            .lead-header { display: flex; justify-content: space-between; font-weight: bold; color: #075E54; font-size: 16px; margin-bottom: 8px; }
-            .lead-meta { font-size: 13px; color: #666; margin-bottom: 10px; }
-            .lead-summary { background: #e1ffc7; padding: 10px 14px; border-radius: 6px; font-size: 14px; color: #111; }
-            .badge { background: #25D366; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+            body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 30px; color: #333; }
+            .container { max-width: 950px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+            h2 { color: #075E54; margin-top: 0; border-bottom: 2px solid #25D366; padding-bottom: 12px; }
+            .lead-card { background: #fafafa; border-left: 6px solid #075E54; padding: 22px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); line-height: 1.6; }
+            .lead-header { display: flex; justify-content: space-between; font-weight: bold; color: #075E54; font-size: 16px; margin-bottom: 10px; }
+            .lead-meta { font-size: 13px; color: #666; margin-bottom: 12px; }
+            .lead-summary { background: #e1ffc7; padding: 12px 16px; border-radius: 6px; font-size: 14px; color: #111; word-break: break-word; }
+            .badge { background: #25D366; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
         </style>
     </head>
     <body>
         <div class="container">
             <h2>🏢 MagicalBoundries Centralized CRM Leads</h2>
-            <p>Showing all qualified website chatbot and Vyora voice call leads, organized day-wise and date-wise.</p>
-            <hr style="border: 0; border-top: 1px solid #ddd; margin-bottom: 25px;">
+            <p>Showing all qualified website chatbot and Vyora voice call leads, organized chronologically.</p>
+            <hr style="border: 0; border-top: 1px solid #ddd; margin-bottom: 30px;">
     """
 
     if not rows:
