@@ -2,7 +2,7 @@ import os
 import sqlite3
 import smtplib
 from email.message import EmailMessage
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -10,13 +10,12 @@ import requests
 
 app = FastAPI(title="Native Real Estate Multi-Project CRM & WhatsApp Gateway")
 
-# Enable CORS so your GoDaddy website can successfully send leads to Render
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins (GoDaddy website)
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 DB_FILE = "native_crm_leads.db"
@@ -27,7 +26,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS leads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            phone TEXT UNIQUE,
+            phone TEXT,
             contact_name TEXT,
             tier TEXT,
             outcome TEXT,
@@ -42,17 +41,6 @@ def init_db():
     conn.close()
 
 init_db()
-
-class AICallWebhookPayload(BaseModel):
-    phone: Optional[str] = Field(default="910000000000")
-    contact_name: Optional[str] = Field(default="Valued Client")
-    outcome: Optional[str] = Field(default="Call Completed")
-    interest_confirmation: Optional[str] = Field(default="No")
-    ai_summary: Optional[str] = Field(default="")
-    recording_url: Optional[str] = Field(default="")
-    called_at: Optional[str] = Field(default="")
-    campaign: Optional[str] = Field(default="Commercial & Industrial Real Estate")
-    event: Optional[Any] = None
 
 def forward_to_owner_whatsapp(notification_text: str):
     owner_phone = "918851692559"
@@ -83,7 +71,6 @@ def forward_to_owner_whatsapp(notification_text: str):
         print(f"[Error forwarding to owner whatsapp]: {e}")
 
 def send_email_notification(subject: str, content: str):
-    """Sends lead notification email to info@magicalboundries.com"""
     recipient = "info@magicalboundries.com"
     smtp_server = os.getenv("SMTP_SERVER")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -135,7 +122,7 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
                     "type": "body",
                     "parameters": [
                         {"type": "text", "text": contact_name},
-                        {"type": "text", "text": "MagicalBoundries Commercial & Industrial Portfolio"}
+                        {"type": "text", "text": "MagicalBoundries Real Estate Portfolio"}
                     ]
                 }
             ]
@@ -150,47 +137,63 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
 
 @app.get("/")
 def read_root():
-    return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active"}
+    return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active (Vyora Number: 7971413799)"}
 
 @app.post("/webhook/ai-caller")
-def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: BackgroundTasks):
+async def receive_ai_call_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
-        if payload.event == "test" or not payload.phone or payload.phone == "910000000000":
-            return {"status": "success", "message": "Webhook test ping received successfully!"}
+        body = await request.json()
+        print("Incoming Vyora Call Webhook Body:", body)
+    except Exception:
+        body = {}
 
-        tier = "Tier 1: Hot Prospect"
-        
-        # 1. Save lead to SQLite database
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT OR REPLACE INTO leads (phone, contact_name, tier, outcome, interest_confirmed, ai_summary, recording_url, called_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (payload.phone, payload.contact_name, tier, payload.outcome, payload.interest_confirmation, payload.ai_summary, payload.recording_url, payload.called_at))
-        conn.commit()
-        conn.close()
+    # Extract fields supporting incoming vs outgoing Vyora calls
+    phone = body.get("phone") or body.get("customer_phone") or body.get("caller_id") or body.get("from") or "910000000000"
+    contact_name = body.get("contact_name") or body.get("name") or body.get("customer_name") or "Valued Client"
+    outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Call Completed"
+    ai_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or "Vyora Call Interaction"
+    recording_url = body.get("recording_url") or body.get("recording") or ""
+    called_at = body.get("called_at") or body.get("timestamp") or ""
+    
+    # Detect if call was Incoming or Outgoing on number 7971413799
+    direction = (body.get("direction") or body.get("call_type") or body.get("type") or "outbound").lower()
+    call_direction_label = "📥 Incoming Call (Customer Dialed 7971413799)" if "in" in direction else "📤 Outgoing Call (Vyora Dialed Lead)"
 
-        # 2. Trigger WhatsApp template to customer
-        background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier, payload.ai_summary, payload.campaign)
-        
-        # 3. Forward WhatsApp notification to business owner: 8851692559
-        forward_to_owner_whatsapp(
-            f"🚨 [New MagicalBoundries Lead]\n"
-            f"Name: {payload.contact_name}\n"
-            f"Phone: {payload.phone}\n"
-            f"Details: {payload.ai_summary}"
-        )
+    if body.get("event") == "test" or phone == "910000000000":
+        return {"status": "success", "message": "Webhook test ping received successfully!"}
 
-        # 4. Forward lead details to email: info@magicalboundries.com
-        send_email_notification(
-            subject=f"New Lead: {payload.contact_name} ({payload.phone})",
-            content=f"A new lead has been qualified on MagicalBoundries.\n\nName: {payload.contact_name}\nPhone: {payload.phone}\nSummary: {payload.ai_summary}\nCampaign: {payload.campaign}"
-        )
+    tier = "Tier 1: Hot Prospect"
 
-        return {"status": "success", "message": "Lead stored, WhatsApp dispatched & notifications forwarded", "assigned_tier": tier}
+    # Save lead to SQLite database
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO leads (phone, contact_name, tier, outcome, interest_confirmed, ai_summary, recording_url, called_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (phone, contact_name, tier, outcome, "Yes", f"[{call_direction_label}] {ai_summary}", recording_url, called_at))
+    conn.commit()
+    conn.close()
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # 1. Trigger WhatsApp template to customer
+    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, tier, ai_summary, "Commercial & Industrial Real Estate")
+    
+    # 2. Forward WhatsApp notification to business owner: 8851692559
+    forward_to_owner_whatsapp(
+        f"📞 [{call_direction_label}]\n"
+        f"Vyora Number: 7971413799\n"
+        f"Name: {contact_name}\n"
+        f"Phone: {phone}\n"
+        f"Outcome: {outcome}\n"
+        f"Summary: {ai_summary}"
+    )
+
+    # 3. Forward lead details to email: info@magicalboundries.com
+    send_email_notification(
+        subject=f"[{call_direction_label}] {contact_name} ({phone})",
+        content=f"Call Interaction on Vyora Number 7971413799.\n\nDirection: {call_direction_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
+    )
+
+    return {"status": "success", "message": "Call logged successfully, WhatsApp & email notifications triggered", "direction": call_direction_label}
 
 @app.get("/leads")
 def get_all_leads(x_api_key: Optional[str] = None):
