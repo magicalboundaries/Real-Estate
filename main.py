@@ -158,7 +158,10 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
     
     try:
         response = requests.post(url, json=payload, headers=headers)
-        print("Meta WhatsApp Template Dispatch Response:", response.json())
+        print("--- META WHATSAPP API RESPONSE ---")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Body: {response.text}")
+        print("---------------------------------")
     except Exception as e:
         print(f"[Error] Failed to send WhatsApp template: {e}")
 
