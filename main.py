@@ -137,32 +137,41 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
 
 @app.get("/")
 def read_root():
-    return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active (Vyora Number: 7971413799)"}
+    return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active"}
 
 @app.post("/webhook/ai-caller")
 async def receive_ai_call_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
-        print("Incoming Vyora Call Webhook Body:", body)
+        print("Incoming Webhook Body:", body)
     except Exception:
         body = {}
 
-    # Extract fields supporting incoming vs outgoing Vyora calls
     phone = body.get("phone") or body.get("customer_phone") or body.get("caller_id") or body.get("from") or "910000000000"
     contact_name = body.get("contact_name") or body.get("name") or body.get("customer_name") or "Valued Client"
-    outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Call Completed"
-    ai_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or "Vyora Call Interaction"
+    outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Visit Scheduled"
+    ai_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or ""
     recording_url = body.get("recording_url") or body.get("recording") or ""
     called_at = body.get("called_at") or body.get("timestamp") or ""
     
-    # Detect if call was Incoming or Outgoing on number 7971413799
-    direction = (body.get("direction") or body.get("call_type") or body.get("type") or "outbound").lower()
-    call_direction_label = "📥 Incoming Call (Customer Dialed 7971413799)" if "in" in direction else "📤 Outgoing Call (Vyora Dialed Lead)"
+    # Intelligently detect if this is from Website Chatbot vs Vyora Voice Call
+    incoming_source = str(body.get("source") or "").lower()
+    summary_lower = ai_summary.lower()
+    
+    if "website" in incoming_source or "website" in summary_lower or "chat" in summary_lower:
+        source_label = "🌐 Website Chatbot Lead (www.magicalboundaries.com)"
+    else:
+        direction = (body.get("direction") or body.get("call_type") or body.get("type") or "outbound").lower()
+        if "in" in direction:
+            source_label = "📥 Vyora Inbound Call (Dialed 7971413799)"
+        else:
+            source_label = "📤 Vyora Outbound Call Agent"
 
     if body.get("event") == "test" or phone == "910000000000":
         return {"status": "success", "message": "Webhook test ping received successfully!"}
 
     tier = "Tier 1: Hot Prospect"
+    final_summary = f"[{source_label}] {ai_summary}"
 
     # Save lead to SQLite database
     conn = sqlite3.connect(DB_FILE)
@@ -170,30 +179,29 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     cursor.execute('''
         INSERT INTO leads (phone, contact_name, tier, outcome, interest_confirmed, ai_summary, recording_url, called_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (phone, contact_name, tier, outcome, "Yes", f"[{call_direction_label}] {ai_summary}", recording_url, called_at))
+    ''', (phone, contact_name, tier, outcome, "Yes", final_summary, recording_url, called_at))
     conn.commit()
     conn.close()
 
     # 1. Trigger WhatsApp template to customer
-    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, tier, ai_summary, "Commercial & Industrial Real Estate")
+    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, tier, final_summary, "Commercial & Industrial Real Estate")
     
     # 2. Forward WhatsApp notification to business owner: 8851692559
     forward_to_owner_whatsapp(
-        f"📞 [{call_direction_label}]\n"
-        f"Vyora Number: 7971413799\n"
+        f"🚨 [New Lead Captured]\n"
+        f"Source: {source_label}\n"
         f"Name: {contact_name}\n"
         f"Phone: {phone}\n"
-        f"Outcome: {outcome}\n"
-        f"Summary: {ai_summary}"
+        f"Details: {ai_summary}"
     )
 
     # 3. Forward lead details to email: info@magicalboundries.com
     send_email_notification(
-        subject=f"[{call_direction_label}] {contact_name} ({phone})",
-        content=f"Call Interaction on Vyora Number 7971413799.\n\nDirection: {call_direction_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
+        subject=f"New Lead: {contact_name} ({phone}) via {source_label}",
+        content=f"A new lead has been captured.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
     )
 
-    return {"status": "success", "message": "Call logged successfully, WhatsApp & email notifications triggered", "direction": call_direction_label}
+    return {"status": "success", "message": "Lead stored successfully", "source": source_label}
 
 @app.get("/leads")
 def get_all_leads(x_api_key: Optional[str] = None):
