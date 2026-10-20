@@ -41,44 +41,24 @@ class AICallWebhookPayload(BaseModel):
     ai_summary: Optional[str] = Field(default="")
     recording_url: Optional[str] = Field(default="")
     called_at: Optional[str] = Field(default="")
-    campaign: Optional[str] = Field(default="Luxury Real Estate")
+    campaign: Optional[str] = Field(default="Commercial & Industrial Real Estate")
     event: Optional[Any] = None
 
+# CENTRAL PROJECT DATABASE
 PROJECT_DATABASE = {
-    "amstoria": {
-        "category": "residential",
-        "name": "BPTP Amstoria 102 Eden Estate III (Sector 102, Gurugram)",
-        "details": "Exclusive ~9.903-acre plotted development within a 143-acre Lutyens-style luxury township on Dwarka Expressway featuring Sanctuary Club and central greens.",
-        "offer": "Pre-launch premier plots with world-class township infrastructure and seamless connectivity to Dwarka Golf Course & Yashobhoomi.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/amstoria-102.pdf"
-    },
-    "eternia": {
-        "category": "residential",
-        "name": "Mahagun Eternia (Tech Zone IV, Greater Noida West)",
-        "details": "Spacious 6-acre residential enclave inspired by the Anthurium flower offering 3 & 4 BHK luxury residences with G+30 floors.",
-        "offer": "Facing a 100-meter fully developed green belt on 130-meter wide main road with double-height entrance lobby and ~25,000 sq. ft. clubhouse.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/mahagun-eternia.pdf"
-    },
-    "godrej miraya": {
-        "category": "residential",
-        "name": "Godrej Miraya (Sector 43, Golf Course Road, Gurugram)",
-        "details": "Ultra-luxury 5.16-acre masterpiece with only 248 exclusive residences, 3-side open towers, no shared walls, and The Crystal Club.",
-        "offer": "Legacy luxury living by India's No. 1 Developer with 127 years of trust, private lounges, and elite concierge services.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/godrej-miraya.pdf"
-    },
-    "arista luxe": {
-        "category": "residential",
-        "name": "The Arista Luxe (Sector 168, Noida Expressway - Nimbus)",
-        "details": "British architectural elegance featuring Ionic columns, 11 ft. floor-to-ceiling height, expansive Yamuna & forest views, and 7 conceptualized pools.",
-        "offer": "Limited period pre-launch price advantage before revision. 65% open green spaces and 1.6 lakh sq. ft. Club Aristaire.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/arista-luxe.pdf"
-    },
-    "mahagun synq": {
+    "commercial": {
         "category": "commercial",
-        "name": "Mahagun Synq - IQ Suites & Commercial (Greater Noida West)",
-        "details": "AI-optimised 1 & 2 BHK smart suites with high-street commercial retail spaces on Ground to 4th Floor powered by CLEUB home automation.",
-        "offer": "High rental yields, fully furnished by IKEA, ideal for smart investors seeking retail and studio spaces.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/mahagun-synq.pdf"
+        "name": "MagicalBoundries Commercial & Industrial Portfolios (Delhi NCR)",
+        "details": "Premium commercial retail spaces, IQ suites, and industrial land parcels across Gurugram, Noida, and Greater Noida.",
+        "offer": "High rental yields, flexible investment slabs, and prime locations tailored for business growth.",
+        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf"
+    },
+    "industrial": {
+        "category": "industrial",
+        "name": "MagicalBoundries Industrial & Logistics Parks (Delhi NCR)",
+        "details": "Strategic industrial plots, warehousing hubs, and manufacturing zones with seamless expressway connectivity.",
+        "offer": "Plug-and-play industrial infrastructure with robust power backup and logistic access.",
+        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/industrial-portfolio.pdf"
     }
 }
 
@@ -88,7 +68,7 @@ def forward_to_owner_whatsapp(notification_text: str):
     access_token = os.getenv("META_ACCESS_TOKEN")
     
     if not phone_number_id or not access_token:
-        print("[Error]: Meta credentials missing for owner forwarding.")
+        print("[Error]: Meta credentials missing for owner WhatsApp forwarding.")
         return
 
     url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
@@ -151,14 +131,12 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
         "Content-Type": "application/json"
     }
     
-    summary_lower = (ai_summary or "").lower()
+    matched_project_name = "MagicalBoundries Commercial & Industrial Portfolio"
     campaign_lower = (campaign or "").lower()
-    matched_project_name = campaign or "our premium property"
-    
-    for key, proj in PROJECT_DATABASE.items():
-        if key in summary_lower or key in campaign_lower:
-            matched_project_name = proj["name"]
-            break
+    if "industrial" in campaign_lower:
+        matched_project_name = PROJECT_DATABASE["industrial"]["name"]
+    else:
+        matched_project_name = PROJECT_DATABASE["commercial"]["name"]
 
     payload = {
         "messaging_product": "whatsapp",
@@ -193,6 +171,7 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
 
         tier = "Tier 1: Hot Prospect"
         
+        # 1. Save lead to SQLite database
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('''
@@ -202,10 +181,10 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
         conn.commit()
         conn.close()
 
-        # 1. Trigger WhatsApp template to customer
+        # 2. Trigger WhatsApp template to customer
         background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier, payload.ai_summary, payload.campaign)
         
-        # 2. Forward WhatsApp notification to business owner: 8851692559
+        # 3. Forward WhatsApp notification to business owner: 8851692559
         forward_to_owner_whatsapp(
             f"🚨 [New MagicalBoundries Lead]\n"
             f"Name: {payload.contact_name}\n"
@@ -213,7 +192,7 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
             f"Details: {payload.ai_summary}"
         )
 
-        # 3. Forward lead details to email: info@magicalboundries.com
+        # 4. Forward lead details to email: info@magicalboundries.com
         send_email_notification(
             subject=f"New Lead: {payload.contact_name} ({payload.phone})",
             content=f"A new lead has been qualified on MagicalBoundries.\n\nName: {payload.contact_name}\nPhone: {payload.phone}\nSummary: {payload.ai_summary}\nCampaign: {payload.campaign}"
