@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import smtplib
+from email.message import EmailMessage
 from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel, Field
@@ -42,11 +44,7 @@ class AICallWebhookPayload(BaseModel):
     campaign: Optional[str] = Field(default="Luxury Real Estate")
     event: Optional[Any] = None
 
-# ==========================================
-# CENTRAL PROJECT DATABASE (Residential & Commercial Classified)
-# ==========================================
 PROJECT_DATABASE = {
-    # RESIDENTIAL PROJECTS
     "amstoria": {
         "category": "residential",
         "name": "BPTP Amstoria 102 Eden Estate III (Sector 102, Gurugram)",
@@ -75,49 +73,12 @@ PROJECT_DATABASE = {
         "offer": "Limited period pre-launch price advantage before revision. 65% open green spaces and 1.6 lakh sq. ft. Club Aristaire.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/arista-luxe.pdf"
     },
-    "twin horizon": {
-        "category": "residential",
-        "name": "HCBS Twin Horizon (Sector 102, Dwarka Expressway)",
-        "details": "Low-density luxury 3 & 4 BHK residences with 70% open green spaces, 1.15 lakh sq. ft. club & recreational space.",
-        "offer": "Special payment plan: Pay 10% now, attractive bank loan schemes powered by Bajaj Housing Finance.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/twin-horizon.pdf"
-    },
-    "hero homes": {
-        "category": "residential",
-        "name": "Leafsong Retreat / The Palatial (Sector MU, Greater Noida - Hero)",
-        "details": "Resort-themed luxury project featuring AQI-controlled apartments, 70,000 sq. ft. ultra-luxury clubhouse, and smart 3 BHK layouts.",
-        "offer": "Smart Payment Plan: Pay just 50 Lakhs in 4 months, zero payment till 18 months. First transfer free!",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/hero-homes.pdf"
-    },
-    "eldeco amaya": {
-        "category": "residential",
-        "name": "Eldeco Amaya (Sector 33, Sonipat)",
-        "details": "14 acres of Tuscan-style premium residential plots and villas inspired by European countryside living.",
-        "offer": "Features Club Amaya, swimming pool, landscaped greens, and 60-meter wide road access.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/eldeco.pdf"
-    },
-    "serenity hills": {
-        "category": "residential",
-        "name": "Emaar Serenity Hills (Sector 86, Gurugram)",
-        "details": "IGBC Platinum pre-certified luxury 3 & 4 BHK residences with 8 acres of central greens and a waterfront promenade.",
-        "offer": "Resort-styled Club Serenity, EV charging infrastructure, and expansive decks with full-height glazing.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/serenity.pdf"
-    },
-
-    # COMMERCIAL PROJECTS
     "mahagun synq": {
         "category": "commercial",
         "name": "Mahagun Synq - IQ Suites & Commercial (Greater Noida West)",
         "details": "AI-optimised 1 & 2 BHK smart suites with high-street commercial retail spaces on Ground to 4th Floor powered by CLEUB home automation.",
         "offer": "High rental yields, fully furnished by IKEA, ideal for smart investors seeking retail and studio spaces.",
         "brochure_link": "https://real-estate-dy59.onrender.com/brochures/mahagun-synq.pdf"
-    },
-    "m3m commercial": {
-        "category": "commercial",
-        "name": "M3M Commercial & Retail Avenues (Gurugram)",
-        "details": "High-street retail and luxury commercial spaces with assured rental and festive privileges along prime corridors.",
-        "offer": "Festive Fortune Offer: Pay 40% now, 60% near possession, plus special electronics/iPhone festive vouchers.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/m3m.pdf"
     }
 }
 
@@ -145,9 +106,36 @@ def forward_to_owner_whatsapp(notification_text: str):
     
     try:
         res = requests.post(url, json=payload, headers=headers)
-        print("Owner Forwarding Response:", res.json())
+        print("Owner WhatsApp Forwarding Response:", res.json())
     except Exception as e:
-        print(f"[Error forwarding to owner]: {e}")
+        print(f"[Error forwarding to owner whatsapp]: {e}")
+
+def send_email_notification(subject: str, content: str):
+    """Sends lead notification email to info@magicalboundries.com"""
+    recipient = "info@magicalboundries.com"
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+
+    if not smtp_server or not smtp_user or not smtp_password:
+        print(f"[Email Mock] SMTP settings not configured. Target: {recipient} | Subject: {subject} | Content: {content}")
+        return
+
+    try:
+        msg = EmailMessage()
+        msg.set_content(content)
+        msg['Subject'] = subject
+        msg['From'] = smtp_user
+        msg['To'] = recipient
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+        print(f"[Email Success] Lead sent to {recipient}")
+    except Exception as e:
+        print(f"[Error sending email to {recipient}]: {e}")
 
 def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary: str, campaign: str):
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
@@ -165,14 +153,13 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
     
     summary_lower = (ai_summary or "").lower()
     campaign_lower = (campaign or "").lower()
-    matched_project_name = campaign or "our premium luxury property"
+    matched_project_name = campaign or "our premium property"
     
     for key, proj in PROJECT_DATABASE.items():
         if key in summary_lower or key in campaign_lower:
             matched_project_name = proj["name"]
             break
 
-    # Meta Template Payload (using pre-approved integration test template)
     payload = {
         "messaging_product": "whatsapp",
         "to": phone,
@@ -195,14 +182,6 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
     try:
         response = requests.post(url, json=payload, headers=headers)
         print("Meta WhatsApp API Response:", response.json())
-        
-        # Mirroring out to 8851692559
-        forward_to_owner_whatsapp(
-            f"📤 [Outbound CRM Log]\n"
-            f"Project: {matched_project_name}\n"
-            f"Sent To Customer: {contact_name} ({phone})\n"
-            f"Status: Automated WhatsApp template dispatched successfully."
-        )
     except Exception as e:
         print(f"[Error] Failed to send WhatsApp message to {phone}: {e}")
 
@@ -212,17 +191,7 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
         if payload.event == "test" or not payload.phone or payload.phone == "910000000000":
             return {"status": "success", "message": "Webhook test ping received successfully!"}
 
-        outcome_lower = (payload.outcome or "").lower()
-        interest_lower = (payload.interest_confirmation or "").lower()
-        
-        is_missed_or_voicemail = any(keyword in outcome_lower for keyword in ["voicemail", "failed", "busy", "no answer", "screening", "missed"])
-
-        if is_missed_or_voicemail:
-            tier = "Tier 4: Voicemail / Missed Call"
-        elif "visit scheduled" in outcome_lower or interest_lower == "yes" or "follow up requested" in outcome_lower:
-            tier = "Tier 1: Hot Prospect"
-        else:
-            tier = "Tier 3: Cautious Listener"
+        tier = "Tier 1: Hot Prospect"
         
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
@@ -233,54 +202,27 @@ def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: Bac
         conn.commit()
         conn.close()
 
-        # Trigger WhatsApp and owner forwarding for leads
+        # 1. Trigger WhatsApp template to customer
         background_tasks.add_task(send_free_meta_whatsapp, payload.phone, payload.contact_name, tier, payload.ai_summary, payload.campaign)
         
-        # Direct owner mirror alert
+        # 2. Forward WhatsApp notification to business owner: 8851692559
         forward_to_owner_whatsapp(
-            f"🚨 [New Qualified Lead Captured]\n"
+            f"🚨 [New MagicalBoundries Lead]\n"
             f"Name: {payload.contact_name}\n"
             f"Phone: {payload.phone}\n"
             f"Details: {payload.ai_summary}"
         )
 
-        return {"status": "success", "message": "Lead stored & automated WhatsApp dispatched", "assigned_tier": tier}
+        # 3. Forward lead details to email: info@magicalboundries.com
+        send_email_notification(
+            subject=f"New Lead: {payload.contact_name} ({payload.phone})",
+            content=f"A new lead has been qualified on MagicalBoundries.\n\nName: {payload.contact_name}\nPhone: {payload.phone}\nSummary: {payload.ai_summary}\nCampaign: {payload.campaign}"
+        )
+
+        return {"status": "success", "message": "Lead stored, WhatsApp dispatched & notifications forwarded", "assigned_tier": tier}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/webhook/whatsapp-inbound")
-def verify_whatsapp_webhook(request: Request):
-    verify_token = request.query_params.get("hub.verify_token")
-    challenge = request.query_params.get("hub.challenge")
-    if challenge:
-        return int(challenge)
-    return "Verification failed", 400
-
-@app.post("/webhook/whatsapp-inbound")
-async def receive_whatsapp_reply(request: Request):
-    body = await request.json()
-    try:
-        entries = body.get("entry", [])
-        for entry in entries:
-            changes = entry.get("changes", [])
-            for change in changes:
-                value = change.get("value", {})
-                messages = value.get("messages", [])
-                for msg in messages:
-                    customer_phone = msg.get("from")
-                    message_body = msg.get("text", {}).get("body", "[Media/Attachment]")
-                    
-                    forward_to_owner_whatsapp(
-                        f"💬 [Incoming Customer Reply]\n"
-                        f"From: {customer_phone}\n"
-                        f"Message: {message_body}\n\n"
-                        f"*(Reply directly to this customer)*"
-                    )
-    except Exception as e:
-        print(f"[Error processing incoming whatsapp reply]: {e}")
-        
-    return {"status": "received"}
 
 @app.get("/leads")
 def get_all_leads(x_api_key: Optional[str] = None):
