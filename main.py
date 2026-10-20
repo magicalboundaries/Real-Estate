@@ -2,7 +2,7 @@ import os
 import sqlite3
 import smtplib
 from email.message import EmailMessage
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -23,6 +23,7 @@ DB_FILE = "native_crm_leads.db"
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    # Removed UNIQUE constraint so past leads are NEVER deleted or overwritten!
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS leads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,7 +97,7 @@ def send_email_notification(subject: str, content: str):
     except Exception as e:
         print(f"[Error sending email to {recipient}]: {e}")
 
-def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary: str, campaign: str):
+def send_free_meta_whatsapp(phone: str, contact_name: str, matched_project: str):
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
@@ -122,7 +123,7 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
                     "type": "body",
                     "parameters": [
                         {"type": "text", "text": contact_name},
-                        {"type": "text", "text": "MagicalBoundries Real Estate Portfolio"}
+                        {"type": "text", "text": matched_project}
                     ]
                 }
             ]
@@ -139,69 +140,92 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
 def read_root():
     return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active"}
 
-@app.post("/webhook/ai-caller")
-async def receive_ai_call_webhook(request: Request, background_tasks: BackgroundTasks):
+# Dedicated Endpoint for Website Chatbot
+@app.post("/webhook/website-chat")
+async def receive_website_chat_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
-        print("Incoming Webhook Body:", body)
     except Exception:
         body = {}
 
-    phone = body.get("phone") or body.get("customer_phone") or body.get("caller_id") or body.get("from") or "910000000000"
-    contact_name = body.get("contact_name") or body.get("name") or body.get("customer_name") or "Valued Client"
-    outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Visit Scheduled"
-    ai_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or ""
-    recording_url = body.get("recording_url") or body.get("recording") or ""
-    called_at = body.get("called_at") or body.get("timestamp") or ""
+    phone = body.get("phone", "910000000000")
+    contact_name = body.get("contact_name", "Valued Client")
+    property_type = body.get("property_type", "Commercial / Industrial")
+    ai_summary = body.get("ai_summary", "")
     
-    # Intelligently detect if this is from Website Chatbot vs Vyora Voice Call
-    incoming_source = str(body.get("source") or "").lower()
-    summary_lower = ai_summary.lower()
-    
-    if "website" in incoming_source or "website" in summary_lower or "chat" in summary_lower:
-        source_label = "🌐 Website Chatbot Lead (www.magicalboundaries.com)"
-    else:
-        direction = (body.get("direction") or body.get("call_type") or body.get("type") or "outbound").lower()
-        if "in" in direction:
-            source_label = "📥 Vyora Inbound Call (Dialed 7971413799)"
-        else:
-            source_label = "📤 Vyora Outbound Call Agent"
+    source_label = "🌐 Website Chatbot Lead (www.magicalboundaries.com)"
+    full_summary = f"[{source_label}] {ai_summary}"
 
-    if body.get("event") == "test" or phone == "910000000000":
-        return {"status": "success", "message": "Webhook test ping received successfully!"}
-
-    tier = "Tier 1: Hot Prospect"
-    final_summary = f"[{source_label}] {ai_summary}"
-
-    # Save lead to SQLite database
+    # Save to SQLite (Appends new row without deleting past leads)
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO leads (phone, contact_name, tier, outcome, interest_confirmed, ai_summary, recording_url, called_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (phone, contact_name, tier, outcome, "Yes", final_summary, recording_url, called_at))
+    ''', (phone, contact_name, "Tier 1: Hot Prospect", "Visit Scheduled", "Yes", full_summary, "", ""))
     conn.commit()
     conn.close()
 
-    # 1. Trigger WhatsApp template to customer
-    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, tier, final_summary, "Commercial & Industrial Real Estate")
-    
-    # 2. Forward WhatsApp notification to business owner: 8851692559
+    # Trigger notifications
+    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, property_type)
     forward_to_owner_whatsapp(
-        f"🚨 [New Lead Captured]\n"
-        f"Source: {source_label}\n"
+        f"🚨 [New Website Chatbot Lead]\n"
         f"Name: {contact_name}\n"
         f"Phone: {phone}\n"
         f"Details: {ai_summary}"
     )
-
-    # 3. Forward lead details to email: info@magicalboundries.com
     send_email_notification(
-        subject=f"New Lead: {contact_name} ({phone}) via {source_label}",
-        content=f"A new lead has been captured.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
+        subject=f"New Website Lead: {contact_name} ({phone})",
+        content=f"A new lead was captured via www.magicalboundaries.com chatbot.\n\nName: {contact_name}\nPhone: {phone}\nSummary: {ai_summary}"
     )
 
-    return {"status": "success", "message": "Lead stored successfully", "source": source_label}
+    return {"status": "success", "message": "Website lead stored successfully"}
+
+# Dedicated Endpoint for Vyora Voice Calls
+@app.post("/webhook/ai-caller")
+async def receive_ai_call_webhook(request: Request, background_tasks: BackgroundTasks):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    phone = body.get("phone") or body.get("customer_phone") or body.get("caller_id") or "910000000000"
+    contact_name = body.get("contact_name") or body.get("name") or "Valued Client"
+    outcome = body.get("outcome") or body.get("status") or "Call Completed"
+    ai_summary = body.get("ai_summary") or body.get("summary") or "Vyora Voice Interaction"
+    recording_url = body.get("recording_url") or ""
+    called_at = body.get("called_at") or ""
+    
+    direction = (body.get("direction") or body.get("call_type") or "outbound").lower()
+    source_label = "📥 Vyora Inbound Call (7971413799)" if "in" in direction else "📤 Vyora Outbound Call Agent"
+    full_summary = f"[{source_label}] {ai_summary}"
+
+    # Save to SQLite (Appends new row)
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO leads (phone, contact_name, tier, outcome, interest_confirmed, ai_summary, recording_url, called_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (phone, contact_name, "Tier 1: Hot Prospect", outcome, "Yes", full_summary, recording_url, called_at))
+    conn.commit()
+    conn.close()
+
+    # Trigger notifications
+    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, "MagicalBoundries Real Estate")
+    forward_to_owner_whatsapp(
+        f"📞 [{source_label}]\n"
+        f"Name: {contact_name}\n"
+        f"Phone: {phone}\n"
+        f"Outcome: {outcome}\n"
+        f"Summary: {ai_summary}"
+    )
+    send_email_nickname = f"New Vyora Lead: {contact_name} ({phone})"
+    send_email_notification(
+        subject=send_email_nickname,
+        content=f"Call Interaction on Vyora Number 7971413799.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
+    )
+
+    return {"status": "success", "message": "Vyora call logged successfully"}
 
 @app.get("/leads")
 def get_all_leads(x_api_key: Optional[str] = None):
