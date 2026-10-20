@@ -4,10 +4,20 @@ import smtplib
 from email.message import EmailMessage
 from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import requests
 
 app = FastAPI(title="Native Real Estate Multi-Project CRM & WhatsApp Gateway")
+
+# Enable CORS so your GoDaddy website can successfully send leads to Render
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (GoDaddy website)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
 
 DB_FILE = "native_crm_leads.db"
 
@@ -43,24 +53,6 @@ class AICallWebhookPayload(BaseModel):
     called_at: Optional[str] = Field(default="")
     campaign: Optional[str] = Field(default="Commercial & Industrial Real Estate")
     event: Optional[Any] = None
-
-# CENTRAL PROJECT DATABASE
-PROJECT_DATABASE = {
-    "commercial": {
-        "category": "commercial",
-        "name": "MagicalBoundries Commercial & Industrial Portfolios (Delhi NCR)",
-        "details": "Premium commercial retail spaces, IQ suites, and industrial land parcels across Gurugram, Noida, and Greater Noida.",
-        "offer": "High rental yields, flexible investment slabs, and prime locations tailored for business growth.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf"
-    },
-    "industrial": {
-        "category": "industrial",
-        "name": "MagicalBoundries Industrial & Logistics Parks (Delhi NCR)",
-        "details": "Strategic industrial plots, warehousing hubs, and manufacturing zones with seamless expressway connectivity.",
-        "offer": "Plug-and-play industrial infrastructure with robust power backup and logistic access.",
-        "brochure_link": "https://real-estate-dy59.onrender.com/brochures/industrial-portfolio.pdf"
-    }
-}
 
 def forward_to_owner_whatsapp(notification_text: str):
     owner_phone = "918851692559"
@@ -131,13 +123,6 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
         "Content-Type": "application/json"
     }
     
-    matched_project_name = "MagicalBoundries Commercial & Industrial Portfolio"
-    campaign_lower = (campaign or "").lower()
-    if "industrial" in campaign_lower:
-        matched_project_name = PROJECT_DATABASE["industrial"]["name"]
-    else:
-        matched_project_name = PROJECT_DATABASE["commercial"]["name"]
-
     payload = {
         "messaging_product": "whatsapp",
         "to": phone,
@@ -150,7 +135,7 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
                     "type": "body",
                     "parameters": [
                         {"type": "text", "text": contact_name},
-                        {"type": "text", "text": matched_project_name}
+                        {"type": "text", "text": "MagicalBoundries Commercial & Industrial Portfolio"}
                     ]
                 }
             ]
@@ -162,6 +147,10 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, tier: str, ai_summary
         print("Meta WhatsApp API Response:", response.json())
     except Exception as e:
         print(f"[Error] Failed to send WhatsApp message to {phone}: {e}")
+
+@app.get("/")
+def read_root():
+    return {"status": "online", "system": "MagicalBoundries CRM & WhatsApp Gateway is active"}
 
 @app.post("/webhook/ai-caller")
 def receive_ai_call_webhook(payload: AICallWebhookPayload, background_tasks: BackgroundTasks):
