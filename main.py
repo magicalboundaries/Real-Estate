@@ -5,7 +5,6 @@ from email.message import EmailMessage
 from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 import requests
 
 app = FastAPI(title="Native Real Estate Multi-Project CRM & WhatsApp Gateway")
@@ -23,7 +22,6 @@ DB_FILE = "native_crm_leads.db"
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    # Removed UNIQUE constraint so past leads are NEVER deleted or overwritten!
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS leads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +40,22 @@ def init_db():
     conn.close()
 
 init_db()
+
+# PROJECT BROCHURE DATABASE
+PROJECT_BROCHURES = {
+    "commercial": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf",
+    "industrial": "https://real-estate-dy59.onrender.com/brochures/industrial-portfolio.pdf",
+    "m3m": "https://real-estate-dy59.onrender.com/brochures/m3m-commercial.pdf",
+    "amstoria": "https://real-estate-dy59.onrender.com/brochures/amstoria-102.pdf",
+    "default": "https://real-estate-dy59.onrender.com/brochures/magicalboundries-master-portfolio.pdf"
+}
+
+def get_brochure_link(text_context: str) -> str:
+    lower = text_context.lower()
+    for key, link in PROJECT_BROCHURES.items():
+        if key in lower:
+            return link
+    return PROJECT_BROCHURES["default"]
 
 def forward_to_owner_whatsapp(notification_text: str):
     owner_phone = "918851692559"
@@ -97,12 +111,21 @@ def send_email_notification(subject: str, content: str):
     except Exception as e:
         print(f"[Error sending email to {recipient}]: {e}")
 
-def send_free_meta_whatsapp(phone: str, contact_name: str, matched_project: str):
+def send_whatsapp_brochure_message(phone: str, contact_name: str, project_context: str):
+    """Sends a direct WhatsApp message with the exact brochure link to the customer."""
     phone_number_id = os.getenv("META_PHONE_NUMBER_ID")
     access_token = os.getenv("META_ACCESS_TOKEN")
     
+    brochure_url = get_brochure_link(project_context)
+    message_body = (
+        f"Dear {contact_name},\n\n"
+        f"Thank you for your interest with MagicalBoundries! As requested, here is the direct download link for the property brochure and investment details you enquired about:\n\n"
+        f"📥 {brochure_url}\n\n"
+        f"Our senior property advisor will connect with you shortly to assist you further."
+    )
+
     if not phone_number_id or not access_token:
-        print("[WhatsApp Mock] Meta credentials not set. Skipping WhatsApp dispatch.")
+        print(f"[WhatsApp Mock] Meta credentials not set. Would have sent brochure to {phone}: {message_body}")
         return
 
     url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
@@ -114,27 +137,15 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, matched_project: str)
     payload = {
         "messaging_product": "whatsapp",
         "to": phone,
-        "type": "template",
-        "template": {
-            "name": "3p_direct_integration_test_template",
-            "language": { "code": "en_US" },
-            "components": [
-                {
-                    "type": "body",
-                    "parameters": [
-                        {"type": "text", "text": contact_name},
-                        {"type": "text", "text": matched_project}
-                    ]
-                }
-            ]
-        }
+        "type": "text",
+        "text": {"body": message_body}
     }
     
     try:
         response = requests.post(url, json=payload, headers=headers)
-        print("Meta WhatsApp API Response:", response.json())
+        print("Meta WhatsApp Brochure Dispatch Response:", response.json())
     except Exception as e:
-        print(f"[Error] Failed to send WhatsApp message to {phone}: {e}")
+        print(f"[Error] Failed to send WhatsApp brochure to {phone}: {e}")
 
 @app.get("/")
 def read_root():
@@ -156,7 +167,6 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     source_label = "🌐 Website Chatbot Lead (www.magicalboundaries.com)"
     full_summary = f"[{source_label}] {ai_summary}"
 
-    # Save to SQLite (Appends new row without deleting past leads)
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
@@ -166,8 +176,10 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
     conn.commit()
     conn.close()
 
-    # Trigger notifications
-    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, property_type)
+    # Trigger direct brochure WhatsApp to customer
+    background_tasks.add_task(send_whatsapp_brochure_message, phone, contact_name, property_type + " " + ai_summary)
+    
+    # Notify owner & email
     forward_to_owner_whatsapp(
         f"🚨 [New Website Chatbot Lead]\n"
         f"Name: {contact_name}\n"
@@ -179,7 +191,7 @@ async def receive_website_chat_webhook(request: Request, background_tasks: Backg
         content=f"A new lead was captured via www.magicalboundaries.com chatbot.\n\nName: {contact_name}\nPhone: {phone}\nSummary: {ai_summary}"
     )
 
-    return {"status": "success", "message": "Website lead stored successfully"}
+    return {"status": "success", "message": "Website lead stored and brochure WhatsApp dispatched"}
 
 # Dedicated Endpoint for Vyora Voice Calls
 @app.post("/webhook/ai-caller")
@@ -189,18 +201,35 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     except Exception:
         body = {}
 
-    phone = body.get("phone") or body.get("customer_phone") or body.get("caller_id") or "910000000000"
-    contact_name = body.get("contact_name") or body.get("name") or "Valued Client"
-    outcome = body.get("outcome") or body.get("status") or "Call Completed"
-    ai_summary = body.get("ai_summary") or body.get("summary") or "Vyora Voice Interaction"
-    recording_url = body.get("recording_url") or ""
-    called_at = body.get("called_at") or ""
+    phone = (
+        body.get("phone") or 
+        body.get("customer_phone") or 
+        body.get("phone_number") or 
+        body.get("caller_id") or 
+        body.get("to") or 
+        body.get("from") or 
+        (body.get("customer") or {}).get("phone") or 
+        (body.get("lead") or {}).get("phone") or 
+        "910000000000"
+    )
+
+    contact_name = (
+        body.get("contact_name") or 
+        body.get("name") or 
+        body.get("customer_name") or 
+        (body.get("customer") or {}).get("name") or 
+        "Valued Client"
+    )
+
+    outcome = body.get("outcome") or body.get("status") or body.get("call_status") or "Call Completed"
+    ai_summary = body.get("ai_summary") or body.get("summary") or body.get("transcript") or "Vyora Voice Interaction"
+    recording_url = body.get("recording_url") or body.get("recording") or ""
+    called_at = body.get("called_at") or body.get("timestamp") or ""
     
-    direction = (body.get("direction") or body.get("call_type") or "outbound").lower()
+    direction = (body.get("direction") or body.get("call_type") or body.get("type") or "outbound").lower()
     source_label = "📥 Vyora Inbound Call (7971413799)" if "in" in direction else "📤 Vyora Outbound Call Agent"
     full_summary = f"[{source_label}] {ai_summary}"
 
-    # Save to SQLite (Appends new row)
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
@@ -210,8 +239,10 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
     conn.commit()
     conn.close()
 
-    # Trigger notifications
-    background_tasks.add_task(send_free_meta_whatsapp, phone, contact_name, "MagicalBoundries Real Estate")
+    # Trigger direct brochure WhatsApp to customer (incoming or outgoing call)
+    background_tasks.add_task(send_whatsapp_brochure_message, phone, contact_name, ai_summary)
+    
+    # Notify owner & email
     forward_to_owner_whatsapp(
         f"📞 [{source_label}]\n"
         f"Name: {contact_name}\n"
@@ -219,13 +250,12 @@ async def receive_ai_call_webhook(request: Request, background_tasks: Background
         f"Outcome: {outcome}\n"
         f"Summary: {ai_summary}"
     )
-    send_email_nickname = f"New Vyora Lead: {contact_name} ({phone})"
     send_email_notification(
-        subject=send_email_nickname,
+        subject=f"New Vyora Lead: {contact_name} ({phone})",
         content=f"Call Interaction on Vyora Number 7971413799.\n\nSource: {source_label}\nName: {contact_name}\nPhone: {phone}\nOutcome: {outcome}\nSummary: {ai_summary}"
     )
 
-    return {"status": "success", "message": "Vyora call logged successfully"}
+    return {"status": "success", "message": "Vyora call logged and brochure WhatsApp dispatched"}
 
 @app.get("/leads")
 def get_all_leads(x_api_key: Optional[str] = None):
