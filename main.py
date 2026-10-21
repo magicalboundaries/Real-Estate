@@ -45,11 +45,6 @@ PROJECT_BROCHURES = {
     "project_a": "https://example.com/project-a-brochure.pdf"
 }
 
-def get_brochure_link(project_name: Optional[str]) -> str:
-    if project_name and project_name.lower() in PROJECT_BROCHURES:
-        return PROJECT_BROCHURES[project_name.lower()]
-    return PROJECT_BROCHURES["default"]
-
 def clean_phone(phone: str) -> str:
     cleaned = "".join(filter(str.isdigit, str(phone)))
     return cleaned
@@ -94,8 +89,11 @@ def send_whatsapp_brochure(phone: str, name: str, project: str):
 @app.post("/webhook/website-chat")
 async def website_chat_lead(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
+    print("Received lead payload from website:", data)
+    
     name = data.get("name", "Valued Customer")
-    phone = data.get("phone", "")
+    # Check multiple possible key names for the phone number sent by the website
+    phone = data.get("phone") or data.get("phone_number") or data.get("mobile") or data.get("whatsapp") or ""
     email = data.get("email", "")
     project = data.get("project", "default")
     summary = data.get("summary", "Website Lead Capture")
@@ -113,6 +111,9 @@ async def website_chat_lead(request: Request, background_tasks: BackgroundTasks)
     # Trigger WhatsApp message in background
     if phone:
         background_tasks.add_task(send_whatsapp_brochure, phone, name, project)
+        print(f"Dispatched WhatsApp background task for phone: {phone}")
+    else:
+        print("WARNING: Lead received, but NO valid phone number field found in payload!")
         
     return {"status": "success", "message": "Lead received and brochure dispatch initiated."}
 
