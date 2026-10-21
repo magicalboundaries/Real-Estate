@@ -41,13 +41,8 @@ def init_db():
 
 init_db()
 
-# Multi-Project Brochure mapping
-PROJECT_BROCHURES = {
-    "default": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf",
-    "hcbs twin horizon": "https://real-estate-dy59.onrender.com/brochures/hcbs-twin-horizon-brochure.pdf",
-    "pushpanjali": "https://real-estate-dy59.onrender.com/brochures/pushpanjali-portfolio.pdf",
-    "gurugram": "https://real-estate-dy59.onrender.com/brochures/gurugram-residential.pdf"
-}
+def clean_phone(phone: str) -> str:
+    return "".join(filter(str.isdigit, str(phone)))
 
 def detect_project(data: dict) -> str:
     payload_str = str(data).lower()
@@ -62,17 +57,6 @@ def detect_project(data: dict) -> str:
     if explicit:
         return str(explicit)
     return "HCBS Twin Horizon"
-
-def get_brochure_link(project_name: Optional[str]) -> str:
-    if project_name:
-        p_lower = project_name.lower()
-        for key in PROJECT_BROCHURES:
-            if key in p_lower:
-                return PROJECT_BROCHURES[key]
-    return PROJECT_BROCHURES["default"]
-
-def clean_phone(phone: str) -> str:
-    return "".join(filter(str.isdigit, str(phone)))
 
 def send_email_notification(subject: str, body: str):
     smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -102,6 +86,8 @@ def send_whatsapp_message(recipient_phone: str, message_text: str):
         return
     url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    # Send owner alert as a template or text depending on window, but use text since owner number can message in
     payload = {
         "messaging_product": "whatsapp",
         "to": clean_phone(recipient_phone),
@@ -125,19 +111,26 @@ def send_whatsapp_brochure(phone: str, name: str, project: str):
     url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
-    brochure_link = get_brochure_link(project)
-    text_msg = f"Dear {name}, thank you for your interaction with MagicalBoundries regarding {project}! Here is your relevant project brochure link: {brochure_link} - please click to download."
-    
+    # USE APPROVED META TEMPLATE (Required by Meta to deliver messages to cold phone numbers)
     payload = {
         "messaging_product": "whatsapp",
         "to": recipient_phone,
-        "type": "text",
-        "text": {"body": text_msg}
+        "type": "template",
+        "template": {
+            "name": "brochure_dispatch_v3",
+            "language": {"code": "en"}
+        }
     }
     
     try:
-        res = requests.post(url, headers=headers, json=payload)
-        print(f"--- CUSTOMER BROCHURE DISPATCH ({recipient_phone}) Status: {res.status_code} Body: {res.text} ---")
+        response = requests.post(url, headers=headers, json=payload)
+        print(f"--- CUSTOMER TEMPLATE BROCHURE DISPATCH ({recipient_phone}) Status: {response.status_code} Body: {response.text} ---")
+        
+        # Fallback to en_US or text if en fails
+        if response.status_code != 200:
+            payload["template"]["language"]["code"] = "en_US"
+            res2 = requests.post(url, headers=headers, json=payload)
+            print(f"--- RETRY TEMPLATE (en_US) Status: {res2.status_code} Body: {res2.text} ---")
     except Exception as e:
         print(f"Brochure dispatch exception: {e}")
 
@@ -177,7 +170,7 @@ def handle_lead_submission(data: dict, source: str):
         
     summary = f"{summary} ({call_note})"
 
-    # Save to SQLite CRM permanently (prevents overwriting)
+    # Save to SQLite Database permanently
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(
@@ -197,7 +190,7 @@ def handle_lead_submission(data: dict, source: str):
     owner_msg = f"🔴 *[New Lead - {source}]*\nName: {name}\nPhone: {phone}\nProject: {project}\nDetails: {summary}"
     send_whatsapp_message("8851692559", owner_msg)
     
-    # 3. Customer Brochure Dispatch (Instant text message)
+    # 3. Customer Brochure Dispatch (Using Meta Template)
     if phone:
         send_whatsapp_brochure(phone, name, project)
 
