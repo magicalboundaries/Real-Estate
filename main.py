@@ -91,6 +91,7 @@ def send_email_notification(subject: str, body: str):
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
+        print("Email notification sent to info@magicalboundaries.com")
     except Exception as e:
         print(f"Email error: {e}")
 
@@ -124,33 +125,19 @@ def send_whatsapp_brochure(phone: str, name: str, project: str):
     url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
-    # Try template dispatch first
+    brochure_link = get_brochure_link(project)
+    text_msg = f"Dear {name}, thank you for your interaction with MagicalBoundries regarding {project}! Here is your relevant project brochure link: {brochure_link} - please click to download."
+    
     payload = {
         "messaging_product": "whatsapp",
         "to": recipient_phone,
-        "type": "template",
-        "template": {
-            "name": "brochure_dispatch_v3",
-            "language": {"code": "en"}
-        }
+        "type": "text",
+        "text": {"body": text_msg}
     }
     
     try:
-        response = requests.post(url, headers=headers, json=payload)
-        print(f"--- TEMPLATE DISPATCH ({recipient_phone}) Status: {response.status_code} Body: {response.text} ---")
-        
-        # Fallback to direct text if template is pending or fails
-        if response.status_code != 200:
-            brochure_link = get_brochure_link(project)
-            fallback_text = f"Dear {name}, thank you for your interaction with MagicalBoundries regarding {project}! Here is your relevant project brochure link: {brochure_link} - please click to download."
-            payload_text = {
-                "messaging_product": "whatsapp",
-                "to": recipient_phone,
-                "type": "text",
-                "text": {"body": fallback_text}
-            }
-            res_text = requests.post(url, headers=headers, json=payload_text)
-            print(f"--- FALLBACK TEXT DISPATCH Status: {res_text.status_code} Body: {res_text.text} ---")
+        res = requests.post(url, headers=headers, json=payload)
+        print(f"--- CUSTOMER BROCHURE DISPATCH ({recipient_phone}) Status: {res.status_code} Body: {res.text} ---")
     except Exception as e:
         print(f"Brochure dispatch exception: {e}")
 
@@ -190,7 +177,7 @@ def handle_lead_submission(data: dict, source: str):
         
     summary = f"{summary} ({call_note})"
 
-    # Save to SQLite CRM permanently
+    # Save to SQLite CRM permanently (prevents overwriting)
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(
@@ -210,7 +197,7 @@ def handle_lead_submission(data: dict, source: str):
     owner_msg = f"🔴 *[New Lead - {source}]*\nName: {name}\nPhone: {phone}\nProject: {project}\nDetails: {summary}"
     send_whatsapp_message("8851692559", owner_msg)
     
-    # 3. Customer Brochure Dispatch (Applies to all calls: completed, voicemail, screening, failed)
+    # 3. Customer Brochure Dispatch (Instant text message)
     if phone:
         send_whatsapp_brochure(phone, name, project)
 
