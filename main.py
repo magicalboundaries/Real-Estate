@@ -41,6 +41,19 @@ def init_db():
 
 init_db()
 
+PROJECT_BROCHURES = {
+    "default": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf",
+    "hcbs twin horizon": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf"
+}
+
+def get_brochure_link(project_name: Optional[str]) -> str:
+    if project_name:
+        p_lower = project_name.lower()
+        for key in PROJECT_BROCHURES:
+            if key in p_lower:
+                return PROJECT_BROCHURES[key]
+    return PROJECT_BROCHURES["default"]
+
 def clean_phone(phone: str) -> str:
     return "".join(filter(str.isdigit, str(phone)))
 
@@ -88,9 +101,12 @@ def send_whatsapp_brochure(phone: str, name: str, project: str):
     if not token or not phone_number_id:
         print("Meta credentials missing.")
         return
+
     recipient_phone = clean_phone(phone)
     url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    # 1. Try sending via Meta Template `brochure_dispatch_v3`
     payload = {
         "messaging_product": "whatsapp",
         "to": recipient_phone,
@@ -100,19 +116,40 @@ def send_whatsapp_brochure(phone: str, name: str, project: str):
             "language": {"code": "en"}
         }
     }
+    
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"--- BROCHURE DISPATCH ({recipient_phone}) Status: {response.status_code} Body: {response.text} ---")
+        print(f"--- TEMPLATE DISPATCH ({recipient_phone}) Status: {response.status_code} Body: {response.text} ---")
+        
+        # If template fails (e.g. 132001 template pending/not found), fallback to direct text message
+        if response.status_code != 200:
+            print("Template dispatch failed. Falling back to direct WhatsApp text message...")
+            brochure_link = get_brochure_link(project)
+            fallback_text = f"Dear {name}, thank you for your interest with MagicalBoundries! Here is your project brochure link: {brochure_link} - please click to download."
+            payload_text = {
+                "messaging_product": "whatsapp",
+                "to": recipient_phone,
+                "type": "text",
+                "text": {"body": fallback_text}
+            }
+            res_text = requests.post(url, headers=headers, json=payload_text)
+            print(f"--- FALLBACK TEXT DISPATCH Status: {res_text.status_code} Body: {res_text.text} ---")
     except Exception as e:
-        print(f"Brochure dispatch error: {e}")
+        print(f"Brochure dispatch exception: {e}")
 
 def handle_lead_submission(data: dict, source: str):
     print(f"Processing lead from {source} with data:", data)
     name = data.get("contact_name") or data.get("name") or data.get("customer_name") or "Valued Customer"
     phone = data.get("phone") or data.get("phone_number") or data.get("mobile") or data.get("whatsapp") or data.get("customer_phone") or ""
     email = data.get("email", "")
-    project = data.get("project") or data.get("property_type") or data.get("campaign") or "default"
-    summary = data.get("ai_summary") or data.get("summary") or data.get("call_summary") or "Lead Capture"
+    project = data.get("project") or data.get("property_type") or data.get("campaign") or data.get("agent_name") or "default"
+    
+    # Extract summary from VYORA call analysis if present
+    summary = "Lead Capture"
+    if "analysis" in data and isinstance(data["analysis"], dict):
+        summary = data["analysis"].get("summary", "Call Completed")
+    else:
+        summary = data.get("ai_summary") or data.get("summary") or data.get("call_summary") or "Lead Capture"
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -123,13 +160,13 @@ def handle_lead_submission(data: dict, source: str):
     conn.commit()
     conn.close()
     
-    # 1. Email Owner
-    send_email_notification(f"New Lead: {name}", f"Source: {source}\nName: {name}\nPhone: {phone}\nEmail: {email}\nProject: {project}\nSummary: {summary}")
+    # 1. Email Owner (info@magicalboundaries.com)
+    send_email_notification(f"New Lead: {name} ({project})", f"Source: {source}\nName: {name}\nPhone: {phone}\nEmail: {email}\nProject: {project}\nSummary: {summary}")
     
     # 2. WhatsApp Owner Alert (8851692559)
     send_whatsapp_message("8851692559", f"🔔 *New Lead!*\nSource: {source}\nName: {name}\nPhone: {phone}\nProject: {project}\nSummary: {summary}")
     
-    # 3. Customer Brochure Dispatch
+    # 3. Customer Brochure Dispatch (with fallback)
     if phone:
         send_whatsapp_brochure(phone, name, project)
 
@@ -162,15 +199,14 @@ async def verify(request: Request):
 async def webhook_post(request: Request):
     return {"status": "received"}
 
-# CATCH-ALL ROUTE: Catches any POST request from anywhere regardless of endpoint path
+# CATCH-ALL ROUTE
 @app.post("/{path:path}")
 async def catch_all_post(path: str, request: Request):
     try:
         data = await request.json()
     except:
         data = {}
-    print(f"CATCH-ALL POST HIT on path '/{path}' with data:", data)
-    if data and any(k in data for k in ["phone", "phone_number", "mobile", "whatsapp", "contact_name", "name"]):
+    if data and any(k in data for k in ["phone", "phone_number", "mobile", "whatsapp", "contact_name", "name", "event"]):
         handle_lead_submission(data, f"Catch-All (/{path})")
     return {"status": "success", "path": path}
 
@@ -181,8 +217,10 @@ async def dash():
     c.execute("SELECT id, name, phone, email, project, summary, source, created_at, outcome FROM leads ORDER BY id DESC")
     leads = c.fetchall()
     conn.close()
-    html = "<html><body style='font-family:Arial; margin:40px;'><h2>Real Estate CRM Dashboard</h2>"
+    html = "<html><body style='font-family:Arial; margin:40px; background:#f4f7f6;'><h2>Real Estate CRM Dashboard</h2>"
+    if not leads:
+        html += "<p>No leads captured yet.</p>"
     for l in leads:
-        html += f"<div style='background:#fff; border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:6px;'><b>#{l[0]} - {l[1]}</b> | Source: {l[6]} | Phone: {l[2]} | Project: {l[4]}<br><b>Summary:</b> {l[5]}</div>"
+        html += f"<div style='background:#fff; border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:6px;'><b>#{l[0]} - {l[1]}</b> | <span style='background:#e2e8f0; padding:2px 6px; border-radius:4px;'>Source: {l[6]}</span> | Phone: {l[2]} | Project: {l[4]}<br><div style='margin-top:6px; color:#555;'><b>Summary:</b> {l[5]}</div></div>"
     html += "</body></html>"
     return html
