@@ -317,6 +317,22 @@ def get_all_leads(x_api_key: Optional[str] = None):
             """
 
     html_content += """
+    # Meta Webhook Verification (GET)
+@app.get("/webhook")
+async def verify_whatsapp_webhook(request: Request):
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+
+    # Must match the verify token you set in Render (magicalboundries123)
+    expected_token = os.getenv("VERIFY_TOKEN", "magicalboundries123")
+
+    if mode and token:
+        if mode == "subscribe" and token == expected_token:
+            return PlainTextResponse(challenge, status_code=200)
+        else:
+            raise HTTPException(status_code=403, detail="Verification token mismatch")
+    raise HTTPException(status_code=400, detail="Invalid request")
         </div>
     </body>
     </html>
