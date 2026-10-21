@@ -143,7 +143,7 @@ def send_free_meta_whatsapp(phone: str, contact_name: str, project_context: str)
         "type": "template",
         "template": {
             "name": "brochure_dispatch_v3",
-            "language": { "code": "en_US" },
+            "language": { "code": "en" },
             "components": [
                 {
                     "type": "body",
