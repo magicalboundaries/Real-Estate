@@ -53,13 +53,9 @@ app.add_middleware(
 
 # Keys are case-insensitive fragments searched across project/campaign/agent metadata.
 # Override/add mappings with PROJECT_BROCHURES_JSON in Render Environment.
-DEFAULT_BROCHURES = {
-    "hcbs twin horizon": "https://real-estate-dy59.onrender.com/brochures/hcbs-twin-horizon-brochure.pdf",
-    "twin horizon": "https://real-estate-dy59.onrender.com/brochures/hcbs-twin-horizon-brochure.pdf",
-    "pushpanjali": "https://real-estate-dy59.onrender.com/brochures/pushpanjali-portfolio.pdf",
-    "gurugram residential": "https://real-estate-dy59.onrender.com/brochures/gurugram-residential.pdf",
-    "commercial portfolio": "https://real-estate-dy59.onrender.com/brochures/commercial-portfolio.pdf",
-}
+# No fabricated PDF URLs: populate PROJECT_BROCHURES_JSON with real, public HTTPS PDF links.
+# Each key is a phrase found in a project/campaign name; each value is its actual brochure URL.
+DEFAULT_BROCHURES = {}
 try:
     PROJECT_BROCHURES = {**DEFAULT_BROCHURES, **json.loads(os.getenv("PROJECT_BROCHURES_JSON", "{}"))}
 except Exception:
@@ -68,9 +64,10 @@ except Exception:
 
 # WhatsApp template configuration. Values must exactly match the approved Meta template.
 BROCHURE_TEMPLATE_NAME = os.getenv("WHATSAPP_TEMPLATE_NAME", "brochure_dispatch_v3").strip()
-BROCHURE_TEMPLATE_LANGUAGE = os.getenv("WHATSAPP_TEMPLATE_LANGUAGE", "en").strip()
+BROCHURE_TEMPLATE_LANGUAGE = os.getenv("WHATSAPP_TEMPLATE_LANGUAGE", "en_US").strip()
 OWNER_TEMPLATE_NAME = os.getenv("OWNER_WHATSAPP_TEMPLATE_NAME", "").strip()
-OWNER_TEMPLATE_LANGUAGE = os.getenv("OWNER_WHATSAPP_TEMPLATE_LANGUAGE", "en").strip()
+OWNER_TEMPLATE_LANGUAGE = os.getenv("OWNER_WHATSAPP_TEMPLATE_LANGUAGE", "en_US").strip()
+BROCHURE_TEMPLATE_HEADER_TYPE = os.getenv("WHATSAPP_TEMPLATE_HEADER_TYPE", "document").strip().lower()
 
 # Optional JSON defining template body parameters in the exact order expected by Meta.
 # Example ONLY if the approved template has 3 body variables:
@@ -86,8 +83,10 @@ except Exception:
 
 PHONE_KEYS = {
     "phone", "phone_number", "mobile", "mobile_number", "whatsapp", "whatsapp_number",
-    "customer_phone", "callee_phone", "contact_number", "to_number", "recipient_phone",
-    "lead_phone", "caller_number", "from_number", "phoneNumber", "phoneNumberE164",
+    "customer_phone", "customer_mobile", "callee_phone", "callee_number", "callee", "contact_number",
+    "to_number", "recipient_phone", "recipient", "lead_phone", "caller_number", "caller_phone",
+    "caller", "from_number", "from", "to", "destination_number", "customerNumber",
+    "phoneNumber", "phoneNumberE164", "contact_phone", "contact_mobile", "lead_mobile",
 }
 NAME_KEYS = {"name", "contact_name", "customer_name", "lead_name", "full_name", "contactName"}
 EMAIL_KEYS = {"email", "email_address", "customer_email", "lead_email"}
@@ -161,6 +160,59 @@ def init_db() -> None:
 init_db()
 
 
+def import_legacy_local_database() -> None:
+    """One-time best-effort import from an old local leads.db into a mounted DB_FILE."""
+    target = os.path.abspath(DB_FILE)
+    legacy = os.path.abspath("leads.db")
+    if target == legacy or not os.path.isfile(legacy):
+        return
+    try:
+        with db_connect() as target_conn:
+            target_conn.execute("CREATE TABLE IF NOT EXISTS migration_markers (marker TEXT PRIMARY KEY, migrated_at TEXT NOT NULL)")
+            if target_conn.execute("SELECT 1 FROM migration_markers WHERE marker='legacy_local_leads_db_v1'").fetchone():
+                return
+            source_conn = sqlite3.connect(f"file:{legacy}?mode=ro", uri=True, timeout=10)
+            source_conn.row_factory = sqlite3.Row
+            try:
+                tables = {r["name"] for r in source_conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                if "leads" not in tables:
+                    return
+                source_columns = {r["name"] for r in source_conn.execute("PRAGMA table_info(leads)")}
+                target_columns = {r["name"] for r in target_conn.execute("PRAGMA table_info(leads)")}
+                common = [c for c in ("id", "name", "phone", "email", "project", "summary", "source", "created_at", "outcome", "call_status", "event_id", "raw_payload", "brochure_url", "owner_whatsapp_status", "customer_whatsapp_status", "email_status") if c in source_columns and c in target_columns]
+                if common:
+                    rows = source_conn.execute("SELECT " + ",".join('"' + c + '"' for c in common) + " FROM leads ORDER BY id").fetchall()
+                    for row in rows:
+                        values = {c: row[c] for c in common}
+                        # Fill columns introduced by this version with safe defaults.
+                        values.setdefault("name", "Unknown")
+                        values.setdefault("phone", "")
+                        values.setdefault("email", "")
+                        values.setdefault("project", "Unidentified project")
+                        values.setdefault("summary", "")
+                        values.setdefault("source", "Legacy import")
+                        values.setdefault("created_at", now_iso())
+                        values.setdefault("outcome", "Imported from previous database")
+                        values.setdefault("call_status", "")
+                        values.setdefault("event_id", None)
+                        values.setdefault("raw_payload", "{}")
+                        values.setdefault("brochure_url", "")
+                        values.setdefault("owner_whatsapp_status", "legacy/unknown")
+                        values.setdefault("customer_whatsapp_status", "legacy/unknown")
+                        values.setdefault("email_status", "legacy/unknown")
+                        cols = [c for c in ("id", "name", "phone", "email", "project", "summary", "source", "created_at", "outcome", "call_status", "event_id", "raw_payload", "brochure_url", "owner_whatsapp_status", "customer_whatsapp_status", "email_status") if c in target_columns]
+                        target_conn.execute("INSERT OR IGNORE INTO leads (" + ",".join(cols) + ") VALUES (" + ",".join("?" for _ in cols) + ")", [values[c] for c in cols])
+                target_conn.execute("INSERT INTO migration_markers(marker, migrated_at) VALUES (?, ?)", ("legacy_local_leads_db_v1", now_iso()))
+                log.info("Legacy database import completed from %s", legacy)
+            finally:
+                source_conn.close()
+    except Exception:
+        log.exception("Legacy leads.db import failed; original source database was not modified")
+
+
+import_legacy_local_database()
+
+
 def norm_key(key: Any) -> str:
     return re.sub(r"[^a-z0-9]", "", str(key).lower())
 
@@ -215,6 +267,32 @@ def clean_phone(value: Any) -> str:
     return digits if PHONE_VALID_RE.fullmatch(digits) else ""
 
 
+def find_customer_phone(payload: dict, source: str = "") -> str:
+    """Prefer the actual customer/callee/caller field over agent/system phone fields."""
+    all_text = (source + " " + json.dumps(payload, ensure_ascii=False, default=str)).lower()
+    incoming = any(x in all_text for x in ("incoming", "inbound"))
+    outgoing = any(x in all_text for x in ("outgoing", "outbound"))
+    if incoming:
+        priority = ("caller_phone", "caller_number", "caller", "from_number", "from", "customer_phone", "customer_mobile", "lead_phone", "phone_number", "mobile_number", "whatsapp_number", "phone")
+    elif outgoing:
+        priority = ("callee_phone", "callee_number", "callee", "to_number", "recipient_phone", "customer_phone", "customer_mobile", "lead_phone", "phone_number", "mobile_number", "whatsapp_number", "phone")
+    else:
+        priority = ("customer_phone", "customer_mobile", "lead_phone", "callee_phone", "caller_phone", "phone_number", "mobile_number", "whatsapp_number", "phone", "to_number", "from_number")
+    # Exact preferred key order, including nested payload objects.
+    items = list(walk_items(payload))
+    for preferred in priority:
+        wanted = norm_key(preferred)
+        for key, value in items:
+            if norm_key(key) == wanted and value not in (None, "", [], {}):
+                if isinstance(value, dict):
+                    value = next((value[k] for k in ("value", "number", "phone", "text") if k in value and value[k]), "")
+                candidate = clean_phone(value)
+                if candidate:
+                    return candidate
+    # Fallback to any known phone field, but never invent a number.
+    return clean_phone(find_value(payload, PHONE_KEYS))
+
+
 def flatten_text(value: Any) -> str:
     if value is None:
         return ""
@@ -234,16 +312,20 @@ def flatten_text(value: Any) -> str:
 
 
 def detect_project(payload: dict) -> str:
-    # Search named campaign/project fields first, then scan the complete payload.
+    """Infer project from campaign/agent/metadata anywhere in the VYORA payload."""
     explicit = find_value(payload, PROJECT_KEYS)
-    all_text = flatten_text(explicit) + " " + json.dumps(payload, ensure_ascii=False, default=str)
-    lower = all_text.lower()
+    all_text = (flatten_text(explicit) + " " + json.dumps(payload, ensure_ascii=False, default=str)).lower()
     for key in sorted(PROJECT_BROCHURES.keys(), key=len, reverse=True):
-        if key.lower() in lower:
+        if key.lower() != "default" and key.lower() in all_text:
             return key
     if explicit:
         return flatten_text(explicit)[:200]
-    # Do not silently send an unrelated project's brochure if project cannot be inferred.
+    # Retain campaign metadata in the CRM rather than inventing a project.
+    for key, value in walk_items(payload):
+        if norm_key(key) in {"campaign", "campaignname", "agentname", "projectname", "propertyname", "assistantname"}:
+            text_value = flatten_text(value)
+            if text_value:
+                return text_value[:200]
     return "Unidentified project"
 
 
@@ -278,7 +360,7 @@ def detect_source(payload: dict, path: str, default_source: str = "") -> str:
     if "website" in low or "chat" in low or "widget" in low:
         return "Website AI Chat"
     if "vyora" in low or "campaign" in low or "call" in low or "voicemail" in low or "screening" in low:
-        direction = "Incoming" if "incoming" in low or "inbound" in low else ("Outgoing" if "outgoing" in low or "outbound" in low else "")
+        direction = "Incoming" if any(x in low for x in ("incoming", "inbound")) else ("Outgoing" if any(x in low for x in ("outgoing", "outbound")) else "")
         return f"VYORA {direction} Call".strip()
     return source or default_source or f"Webhook {path}"
 
@@ -334,19 +416,26 @@ def template_components(params: list) -> list:
     return [{"type": "body", "parameters": [{"type": "text", "text": str(x)[:1024]} for x in params]}]
 
 
-def send_template(phone: str, template_name: str, language: str, params: list) -> Tuple[bool, str]:
+def send_template(
+    phone: str, template_name: str, language: str, params: list,
+    document_url: str = "", document_filename: str = "brochure.pdf",
+    header_type: str = "",
+) -> Tuple[bool, str]:
     if not template_name:
         return False, "template name not configured"
     payload = {
         "messaging_product": "whatsapp",
         "to": phone,
         "type": "template",
-        "template": {
-            "name": template_name,
-            "language": {"code": language},
-        },
+        "template": {"name": template_name, "language": {"code": language}},
     }
     components = template_components(params)
+    if header_type == "document":
+        if not document_url:
+            return False, "document header selected but no public brochure URL is mapped"
+        components.insert(0, {"type": "header", "parameters": [{
+            "type": "document", "document": {"link": document_url, "filename": document_filename[:200]}
+        }]})
     if components:
         payload["template"]["components"] = components
     return meta_post(payload)
@@ -362,7 +451,7 @@ def send_owner_whatsapp(text: str) -> Tuple[bool, str]:
         params = [text] if OWNER_TEMPLATE_BODY_PARAMS == ["lead_message"] else [
             text if str(x) == "lead_message" else str(x) for x in OWNER_TEMPLATE_BODY_PARAMS
         ]
-        return send_template(owner, OWNER_TEMPLATE_NAME, OWNER_TEMPLATE_LANGUAGE, params)
+        return send_template(owner, OWNER_TEMPLATE_NAME, OWNER_TEMPLATE_LANGUAGE, params, header_type="")
     return meta_post({
         "messaging_product": "whatsapp",
         "to": owner,
@@ -380,7 +469,12 @@ def send_customer_brochure(phone: str, name: str, project: str, brochure_url: st
     # Supported placeholders: customer_name, project, brochure_url, phone.
     values = {"customer_name": name, "project": project, "brochure_url": brochure_url, "phone": phone}
     params = [values.get(str(item), str(item)) for item in BROCHURE_TEMPLATE_BODY_PARAMS]
-    return send_template(phone, BROCHURE_TEMPLATE_NAME, BROCHURE_TEMPLATE_LANGUAGE, params)
+    header_type = BROCHURE_TEMPLATE_HEADER_TYPE if BROCHURE_TEMPLATE_HEADER_TYPE in {"document", ""} else ""
+    filename = re.sub(r"[^A-Za-z0-9._-]+", "_", (project or "property_brochure"))[:100] + ".pdf"
+    return send_template(
+        phone, BROCHURE_TEMPLATE_NAME, BROCHURE_TEMPLATE_LANGUAGE, params,
+        document_url=brochure_url, document_filename=filename, header_type=header_type,
+    )
 
 
 def send_email(subject: str, body: str) -> Tuple[bool, str]:
@@ -445,8 +539,7 @@ def process_lead(payload: dict, source: str) -> dict:
     if not isinstance(payload, dict):
         raise ValueError("Webhook JSON must be an object")
     name = flatten_text(find_value(payload, NAME_KEYS)) or "Unknown"
-    phone_raw = find_value(payload, PHONE_KEYS)
-    phone = clean_phone(phone_raw)
+    phone = find_customer_phone(payload, source)
     email = flatten_text(find_value(payload, EMAIL_KEYS))
     project = detect_project(payload)
     summary = get_nested_summary(payload)
