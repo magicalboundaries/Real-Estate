@@ -1,4 +1,4 @@
-        source=str(source_override or first_value(flat,{"source","lead_source","campaign_source","provider","platform"}) or "Website AI Chat").strip()
+    source=str(source_override or first_value(flat,{"source","lead_source","campaign_source","provider","platform"}) or "Website AI Chat").strip()
     transcript=str(first_value(flat,{"transcript","call_transcript","conversation","summary","call_summary","recording_transcript"}) or "")
     project_hint=str(first_value(flat,{"project","project_name","campaign_name","campaign","campaign_id","property_name","agent_name","assistant_name","property_id"}) or "")
     project=detect_project(flat,project_hint)
