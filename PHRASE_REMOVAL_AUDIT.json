@@ -1,0 +1,891 @@
+{
+  "package_source": "MagicalBoundries_Complete_GitHub_Package.zip",
+  "pdf_files_total": 244,
+  "pdf_files_with_phrase_removed": 220,
+  "total_phrase_lines_removed": 220,
+  "pdf_files_without_phrase": 24,
+  "processing_errors": [],
+  "changed_files": [
+    {
+      "file": "brochures/up012-m3m-the-line-the-cullinan-avenue-festive-offer.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb192-parsvnath-la-tropicana.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb170-ska-destiny-one.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb198-nbcc-amrapali-legacy-schemes.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb146-srs-royal-hills.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up019-generic-5-cr-special-payment-plan-illustration.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb112-m3m-the-cullinan.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb194-tdi-kingsbury-delhi.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb139-olive-county.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb119-crc-joyous.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb070-jmk-park-view-living.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb015-experion-the-heartson.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb050-dlf-the-magnolias.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb043-mrg-crown.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb044-ganga-tathastu.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb124-mahagun-mascot.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb063-puri-diplomatic-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb091-logix-blossom-county.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb110-mahira-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb023-ganga-anantam.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb175-bhutani-grandthum.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb066-paras-quartier.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb080-gaur-the-islands.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb041-smartworld-one-dxp.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb101-himalaya-pride.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb199-dda-golf-view-condominiums.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb008-birla-navya.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb046-adani-oyster-grande.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb002-godrej-aristocrat.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb036-ashiana-anmol.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb131-nitish-vasundhara-heights.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb185-tata-housing-moti-nagar-enclave.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb068-krisumi-phase-3.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb150-conscient-habitat-78.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb144-rps-savana.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb011-emaar-urban-oasis.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb048-mahindra-aura.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up013-mahagun-snyq-iq-suites-by-hi-life.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb134-ajnara-gen-x.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up018-prestige-group-ncr-ready-reckoner-oakwood-mulberry-mayflower.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb031-sobha-altus.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb115-prestige-bougainvillea-gardens.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up003-elan-ramada.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb004-estate-128.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb156-terra-lavinio.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb042-rof-insignia-park.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb189-godrej-south-estate.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb018-bptp-terra.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb074-crc-maesta.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb062-raheja-vedaanta.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb024-central-park-flower-valley-cerise.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb161-max-grandeur-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb201-hcbs-twin-towers.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up002-bptp-amstoria-102-eden-estate-iii-site-plan.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb039-suncity-avenue-102.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb064-orris-carnation-residency.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb089-panchshil-towers-ncr.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb120-gaur-nyc-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb128-gulshan-gc-grand.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb117-sobha-waterfront-noida.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb179-gaur-saundaryam.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb083-supertech-emerald-court.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up009-hero-homes-the-palatial.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb113-eldeco-trinity.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb191-the-amaryllis.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb001-dlf-privana-south.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb094-samridhi-daksh-avenue.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb151-tdi-towers-faridabad.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb088-jaypee-greens-kalypso-court.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb017-ats-knightsbridge.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb100-gulshan-bellina.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb116-birla-estates-noida-sector-150.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up001-bptp-amstoria-plots.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up007-emaar-urban-oasis-phase-4.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb010-adani-samsara-vilasa.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb145-amolik-residency.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb190-dlf-capital-greens.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb118-ats-advantage.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb095-civitech-strings.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb081-nirala-estate-phase-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb174-yeida-authority-plots-gated-schemes.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb102-nimbus-express-park-view.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb085-cleo-county.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb038-central-park-resorts-sky-villas.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb193-uppal-marble-arch.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb096-stellar-mi-city.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb178-arihant-ambar.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb021-ashiana-amarah.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb148-klj-platinum-heights.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb019-conscient-parq.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb005-the-prestige-city-gurugram.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb140-landcraft-river-heights.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb163-ace-terra.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb197-eldeco-city-delhi-enclave.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb052-aipl-the-peaceful-homes.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb098-saya-south-x-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb022-signature-global-deluxe-dxp.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb059-chintels-serenity.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb187-raheja-the-navin-minar.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb058-bestech-park-view-grand-spa.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb136-ashiana-upvan.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb069-krisumi-waterside.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb045-tulip-monsella.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb105-fusion-the-brook.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb107-exotica-fresco.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb177-saya-south-x-high-rise.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb142-omaxe-world-street-commercial-living.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb162-county-walk-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb034-experion-windchants.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb159-gaur-yamuna-city.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb122-aditya-urban-homes.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb071-ats-pious-orchards.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb072-godrej-tropical-isle.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb153-ashiana-palms.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb109-rps-palms-ncr.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up014-mahagun-eternia.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb073-max-estate-128-phase-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb067-whiteland-the-aspen.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb183-max-house-serviced-living.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb155-neharpar-heights.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb196-ashiana-classic-delhi.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb014-elevate-by-hines-conscient.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb186-omaxe-chowk-iconic-suites.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb108-irish-pearls.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb147-ansal-crown-heights.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb065-pioneer-araya.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb016-krisumi-waterfall-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb141-bptp-discovery-park.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb009-mahindra-luminare.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb184-birla-navya-delhi-flagship.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up011-m3m-festive-fortune-jewel-crest-avenue-offer.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb090-alphathum-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb086-tata-eureka-park.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb143-puri-the-pranayam.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb006-tata-primanti.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb133-saviour-greenisle.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb138-sg-oasis.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up005-emaar-serenity-sector-86.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb135-krishna-apra-gardens.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb040-elan-the-presidential.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb171-gaur-runway-luxury-suites.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb169-nirala-trio.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb053-landmark-the-homes-81.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb049-anant-raj-estate.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb092-ats-picturesque-reprisas.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb173-supertech-golf-country.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb051-hcbs-sports-ville.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb123-kw-srishti.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb037-conscient-heritage-max.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb126-wave-city-veridia.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up006-serenity-hills.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb028-godrej-zenith.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb181-dlf-one-midtown.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb099-arihant-abode.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb060-ambience-creacions.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb111-spectrum-metro-serviced-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb027-dlf-the-camellias.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb167-prestige-jewar-oasis.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb007-sobha-city.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb158-ats-allure.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb166-m3m-the-line.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb054-spaze-privvy-the-address.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb114-godrej-woods.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb164-crc-joyous.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb093-aims-golf-avenue-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb020-eldeco-live-by-the-greens.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb084-mahagun-manorialle.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb097-dasnac-the-jewel-of-noida.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up015-nimbus-the-arista-luxe.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb103-rg-residency.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb079-purvanchal-royal-park.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb075-ace-starlit.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb188-emaar-commonwealth-games-village.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb137-sikka-classic-homes.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb061-mapsko-mount-ville.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb035-signature-global-titanium-dxp.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb157-s3m-grand-vista.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up016-hcbs-twin-horizon.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb055-ireo-grand-arch.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up010-hero-homes-leafsong.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb125-apex-d-rio.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb182-anant-raj-the-delhi-residences.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb025-suncity-platinum-towers.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb087-eldeco-amla.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb047-joyville-phase-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb172-purvanchal-royal-city-phase-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb033-bptp-amstoria.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb076-ivory-county.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb154-godrej-retreat-faridabad.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb195-rps-grand-residency.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb032-emaar-digi-homes.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb003-m3m-altitude.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb165-mahindra-world-city-jewar.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb130-vvip-addresses.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb129-raj-nagar-residency.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb026-m3m-capital.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up008-godrej-miraya.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb082-sikka-karnam-greens.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb152-emaar-mgf-emerald-heights.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb168-eldeco-ball-residence.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb121-saya-gold-avenue.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb106-coco-county.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb078-gulshan-dynasty.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up017-signature-global-sarvam-at-dxp-estate.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/up004-eldeco-amaya.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb030-krisumi-waterfall-suites.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb012-joyville-gurugram.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb056-ats-tourmaline.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb029-hero-homes-phase-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb176-samridhi-grand-avenue.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb149-adore-happy-homes-grand.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb127-orange-county.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb057-vatika-sovereign-next.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb104-ska-orion.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb132-jaipuria-sunrise-greens.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb180-gulshan-bellina-phase-2.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb200-hero-homes-urban-delhi.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb013-hero-homes-gurugram.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb160-godrej-golf-links.pdf",
+      "lines_removed": 1
+    },
+    {
+      "file": "brochures/mb077-prateek-edifice.pdf",
+      "lines_removed": 1
+    }
+  ],
+  "note": "Removed the entire customer-information descriptor line containing \u201cDirect developer/broker contact details omitted\u201d wherever it appeared as selectable PDF text. This operation does not certify removal of unrelated developer/broker phone numbers, emails, QR codes, or contact details in images."
+}

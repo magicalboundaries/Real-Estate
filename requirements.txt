@@ -1,4 +1,5 @@
-fastapi
-uvicorn
-requests
-pydantic
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+requests>=2.31,<3
+reportlab>=4,<5
+pandas>=2,<3

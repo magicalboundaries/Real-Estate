@@ -1,0 +1,29 @@
+PDF files in brochures/: 244
+Existing master briefs preserved: 220
+Additional cleaned source PDFs: 24
+
+Additional source PDF filenames:
+gurugram-amstoria-102-eden-estateiii-site-plan-1-magicalboundries.pdf
+gurugram-amstoria-plots-brochure1-magicalboundries.pdf
+gurugram-dxp-sarvam-by-signature-global1-magicalboundries.pdf
+gurugram-elan-ramada-magicalboundries.pdf
+gurugram-emaar-serenity-sector-86-gurugram1-magicalboundries.pdf
+gurugram-festive-fortune-jewel-crest-avenue-customer-magicalboundries.pdf
+gurugram-festive-fortune-line-cullinan-avenue-customer1-magicalboundries.pdf
+gurugram-godrej-miraya-opp-doc1-magicalboundries.pdf
+gurugram-miraya-43-glint-playbook-1-magicalboundries.pdf
+gurugram-miraya-prism-playbook-new-magicalboundries.pdf
+gurugram-sarvam-comparative-pricing-magicalboundries.pdf
+gurugram-sarvam-one-pager-updated-1-magicalboundries.pdf
+gurugram-serenity-hills-e-brochure-magicalboundries.pdf
+gurugram-sg-sarvam-brochure-latest1-magicalboundries.pdf
+gurugram-the-palatial-by-hero-homes1-magicalboundries.pdf
+gurugram-urban-oasis-phase-4-brochure-eoi-documents-24112-241123-2045471-magicalboundries.pdf
+ncr-metropolis-industrial-inventory-price-18-02-2026-magicalboundries.pdf
+ncr-ready-reckonerprestige-group-magicalboundries.pdf
+up-e-brochure-nimbus-magicalboundries.pdf
+up-eldeco-amaya-brochure-final-magicalboundries.pdf
+up-leafsong-gn-e-brochure-14-10-2026-magicalboundries.pdf
+up-mahagun-snyq-brochure1-magicalboundries.pdf
+up-mahgun-eternia-brochure-11x11-02-magicalboundries.pdf
+up-twin-horizon-small-brochure-11-magicalboundries.pdf
